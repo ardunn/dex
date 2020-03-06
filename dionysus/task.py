@@ -36,7 +36,10 @@ class Task:
             self.priority = False
 
         self.name = name.strip()
+        self.id = None
 
+    def rename(self):
+        pass
 
     def edit(self):
         pass
@@ -48,6 +51,13 @@ class Task:
         pass
 
     def prioritize(self):
+        pass
+
+    def deprioritize(self):
+        pass
+
+    def view(self):
+        # Markdown-esque view of file
         pass
 
 
