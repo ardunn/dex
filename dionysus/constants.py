@@ -12,6 +12,9 @@ status_mapping = {
     "3 - done": "done"
 }
 
+status_mapping_inverted = {v: k for k, v in status_mapping.items()}
+
 task_extension = ".md"
 schedule_extension = ".json"
 
+editor = "vim"

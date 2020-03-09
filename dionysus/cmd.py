@@ -1,5 +1,6 @@
 
 # dion configure [root dir]
+    # should ask editor of choice
 # dion work
 # dion project [projectid, like 1] work/rename/stats/prioritize/rename/complete
 # dion project new

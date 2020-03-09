@@ -1,13 +1,31 @@
 import os
 import re
 
-from dionysus.constants import status_regex, priority_regex, priority_keyword, status_mapping, task_extension, lsd, rsd, lpd, rpd
-
+from dionysus.constants import status_regex, priority_regex, priority_keyword, status_mapping, status_mapping_inverted, task_extension, lsd, rsd, lpd, rpd, editor
 
 class Task:
-    def __init__(self, path):
+    def __init__(self, path: str, id: int) -> None:
+        """
+        Task is a single task.
+
+        Args:
+            path (str): The full pathname of the file corresponding to this task.
+            id (int): The unique task id.
+        """
         self.path = path
-        self.relative_path = path.split("/")[-1]
+        self.relative_path = None
+        self.name = None
+        self.id = id
+        self.priority = None
+        self.status = None
+        self.content = None
+        self._refresh()
+
+
+    # todo: turn this into a decorator
+    def _refresh(self) -> None:
+        self.prefix_path = os.path.dirname(self.path)
+        self.relative_path = os.path.relpath()
         name = self.relative_path
 
         status_match = re.search(status_regex, self.relative_path)
@@ -31,21 +49,44 @@ class Task:
                 name = name.replace(lpd + priority_raw + rpd, "")
             else:
                 raise ValueError(f"Task {self.path} has priority {priority_raw} which is invalid. Must use {priority_keyword}")
-
         else:
             self.priority = False
 
         self.name = name.strip()
-        self.id = None
 
-    def rename(self):
-        pass
+        with open(self.path, 'r') as f:
+            self.content = f.read()
 
-    def edit(self):
-        pass
+    def change_status(self, new_status: str) -> None:
+        if new_status not in status_mapping_inverted:
+            raise ValueError(
+                f"New status must be in {list(status_mapping_inverted.keys())}")
+        else:
+            new_status_str = status_mapping_inverted[new_status]
+            new_path = self.path.replace(self.status, new_status_str)
+            os.rename(self.path, new_path)
+            self.path = new_path
+            self._refresh()
 
     def complete(self):
-        pass
+        self.change_status("done")
+        done_dir = os.path.join(self.relative_path, "done")
+        if not os.path.exists(done_dir):
+            os.mkdir(done_dir)
+        new_path = os.path.join(done_dir, self.name)
+        os.rename(self.path, new_path)
+        self.path = new_path
+        self._refresh()
+
+    def rename(self, new_name: str) -> None:
+        new_path = self.path.replace(self.name, new_name)
+        os.rename(self.path, new_name)
+        self.path = new_path
+        self._refresh()
+
+    def edit(self) -> None:
+        os.system(editor + ' ' + self.path)
+        self._refresh()
 
     def work(self):
         pass
@@ -59,6 +100,11 @@ class Task:
     def view(self):
         # Markdown-esque view of file
         pass
+
+    @classmethod
+    def new(cls, path):
+        with open()
+
 
 
 if __name__ == "__main__":
