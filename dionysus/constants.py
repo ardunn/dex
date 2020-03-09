@@ -2,6 +2,7 @@ lpd = "("
 rpd = ")"
 priority_regex = f"\{lpd}(.*)\{rpd}"
 priority_keyword = "priority"
+priority_str = f"{lpd}{priority_keyword}{rpd}"
 
 lsd = "["
 rsd = "]"

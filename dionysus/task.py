@@ -1,7 +1,11 @@
 import os
 import re
 
-from dionysus.constants import status_regex, priority_regex, priority_keyword, status_mapping, status_mapping_inverted, task_extension, lsd, rsd, lpd, rpd, editor
+import mdv
+
+from dionysus.constants import status_regex, priority_regex, priority_keyword, priority_str, status_mapping, status_mapping_inverted, task_extension, lsd, rsd, lpd, rpd, editor
+from dionysus.util import initiate_editor
+
 
 class Task:
     def __init__(self, path: str, id: int) -> None:
@@ -21,6 +25,10 @@ class Task:
         self.content = None
         self._refresh()
 
+    @classmethod
+    def new(cls, path: str, id: int):
+        initiate_editor(path)
+        return Task(path, id)
 
     # todo: turn this into a decorator
     def _refresh(self) -> None:
@@ -63,17 +71,18 @@ class Task:
                 f"New status must be in {list(status_mapping_inverted.keys())}")
         else:
             new_status_str = status_mapping_inverted[new_status]
-            new_path = self.path.replace(self.status, new_status_str)
+            new_relpath = self.relative_path.replace(self.status, new_status_str)
+            new_path = os.path.join(self.prefix_path, new_relpath)
             os.rename(self.path, new_path)
             self.path = new_path
             self._refresh()
 
-    def complete(self):
+    def complete(self) -> None:
         self.change_status("done")
-        done_dir = os.path.join(self.relative_path, "done")
+        done_dir = os.path.join(self.prefix_path, "done")
         if not os.path.exists(done_dir):
             os.mkdir(done_dir)
-        new_path = os.path.join(done_dir, self.name)
+        new_path = os.path.join(done_dir, self.relative_path)
         os.rename(self.path, new_path)
         self.path = new_path
         self._refresh()
@@ -85,26 +94,32 @@ class Task:
         self._refresh()
 
     def edit(self) -> None:
-        os.system(editor + ' ' + self.path)
+        initiate_editor(self.path)
         self._refresh()
 
-    def work(self):
-        pass
-
     def prioritize(self):
-        pass
+        if self.priority:
+            print(f"{self.id}:{self.name} already prioritized.")
+        else:
+            new_relative_path = f"{priority_str} {self.relative_path}"
+            new_path = os.path.join(self.prefix_path, new_relative_path)
+            os.rename(self.path, new_path)
+            self.path = new_path
+            self._refresh()
 
     def deprioritize(self):
-        pass
+        if not self.priority:
+            new_relative_path = self.relative_path.replace(priority_str, "").strip()
+            new_path = os.path.join(self.prefix_path, new_relative_path)
+            os.rename(self.path, new_path)
+            self.path = new_path
+            self._refresh()
+        else:
+            print(f"{self.id}: {self.name} already not prioritized.")
 
     def view(self):
-        # Markdown-esque view of file
-        pass
-
-    @classmethod
-    def new(cls, path):
-        with open()
-
+        formatted = mdv.main(self.content)
+        print(formatted)
 
 
 if __name__ == "__main__":
