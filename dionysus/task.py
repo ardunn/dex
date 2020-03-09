@@ -33,7 +33,7 @@ class Task:
     # todo: turn this into a decorator
     def _refresh(self) -> None:
         self.prefix_path = os.path.dirname(self.path)
-        self.relative_path = os.path.relpath()
+        self.relative_path = os.path.relpath(self.path, self.prefix_path)
         name = self.relative_path
 
         status_match = re.search(status_regex, self.relative_path)
