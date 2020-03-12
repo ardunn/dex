@@ -26,19 +26,30 @@ class Task:
         self.content = None
         self._refresh()
 
+    def __str__(self):
+        return f"<dionysus Task: [{self.priority} {self.status} {self.name}]>"
+
+    def __repr__(self):
+        return self.__str__()
+
     @classmethod
-    def create_from_spec(cls, id: int, path_prefix: str, name: str, priority: int, status: str):
+    def create_from_spec(cls, id: int, path_prefix: str, name: str, priority: int, status: str, edit: bool = True):
         check_status(status)
         check_priority(priority)
-        name = process_name(name)
 
+        if status == done_str:
+            raise StatusError("Cannot create a done task. It's already done, stop wasting time.")
+        name = process_name(name)
         status_pretty = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=status)
         priority_pretty = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=priority)
-
         path = os.path.join(path_prefix, f"{priority_pretty}{status_pretty} {name}{task_extension}")
         if os.path.exists(path):
             raise FileOverwriteError(f"The file \'{path}\' already exists.")
-        initiate_editor(path)
+        if edit:
+            initiate_editor(path)
+        else:
+            with open(path, "w") as f:
+                f.write(f"Task {id}: {name}")
         t = Task(path, id)
         # prevent done tasks from not being placed in done folder,
         # in the weird case the status was done when it was created from spec
@@ -128,21 +139,28 @@ class Task:
         initiate_editor(self.path)
         self._refresh()
 
+    def work(self):
+        self.set_status(doing_str)
+
+    def complete(self):
+        self.set_status(done_str)
+
     @property
     def hold(self):
-        return self.priority == hold_str
+        return self.status == hold_str
 
     @property
     def done(self):
-        return self.priority == done_str
+        return self.status == done_str
 
     @property
     def doing(self):
-        return self.priority == doing_str
+        return self.status == doing_str
 
     @property
     def todo(self):
-        return self.priority == todo_str
+        return self.status == todo_str
+
 
 
 def qualifier_converter(to_list, from_list, key) -> Iterable:
