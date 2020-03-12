@@ -29,7 +29,7 @@ editor = "vim"
 
 print_separator = "-"*30
 
-schedule_fname = f"schedule.{schedule_extension}"
+schedule_fname = f"schedule{schedule_extension}"
 schedule_all_projects_key = "all"
 default_schedule = {
     day: schedule_all_projects_key for day in

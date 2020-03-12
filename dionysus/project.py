@@ -22,6 +22,13 @@ class Project:
         self.done_dir = None
         self._refresh()
 
+    def __str__(self):
+        n_tasks = len(self.tasks.all)
+        return f"<dionysus Project {self.id}: [{self.name}] ({n_tasks} tasks)>"
+
+    def __repr__(self):
+        return self.__str__()
+
     @classmethod
     def create_from_spec(cls, id: str, path_prefix: str, name: str, init_notes: bool = True):
         name = process_name(name)
@@ -74,7 +81,7 @@ class Project:
     def create_new_task(self, name, priority, status, edit=True) -> Task:
         if name in [tn.name for tn in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
-        t = Task.create_from_spec(-1, self.tasks_dir, name, priority, status, edit=edit)
+        t = Task.create_from_spec("<null>", self.tasks_dir, name, priority, status, edit=edit)
         self._refresh()
         return t
 
@@ -89,7 +96,6 @@ class Project:
         task_dict = {status: [] for status in status_primitives}
         task_dict["all"] = []
         task_collection = AttrDict(task_dict)
-        # tasks = []
         unique_id = 0
         for container_dir in [self.done_dir, self.tasks_dir]:
             for f in os.listdir(container_dir):
@@ -97,7 +103,8 @@ class Project:
                 if os.path.exists(fp):
                     if fp.endswith(task_extension):
                         unique_id += 1
-                        t = Task(path=fp, id=unique_id)
+                        pid_tid = f"{self.id}{unique_id}"
+                        t = Task(path=fp, id=pid_tid)
                         task_collection[t.status].append(t)
                         task_collection["all"].append(t)
         return task_collection
@@ -184,9 +191,9 @@ if __name__ == "__main__":
     #     init_notes=True
     # )
 
-    p = Project("/home/x/dionysus/dionysus/tmp_projset/proj1", id="a")
+    p = Project("/home/x/dionysus/dionysus/tmp_projset/proj2", id="a")
 
-    p.rename("proj2")
+    # p.rename("proj2")
 
     # t = p.create_new_task("completed first", 1, "todo", edit=False)
     # t.complete()

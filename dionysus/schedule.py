@@ -1,8 +1,9 @@
 import os
 import json
 
-from dionysus.project import  Project
+from dionysus.project import Project
 from dionysus.constants import schedule_fname, valid_project_ids, default_schedule
+
 
 class Schedule:
     def __init__(self, path):
@@ -29,8 +30,20 @@ class Schedule:
 
     @property
     def projects(self):
+        folders = []
+        for folder in os.listdir(self.path):
+            full_dirpath = os.path.join(self.path, folder)
+            if os.path.isdir(full_dirpath):
+                folders.append(full_dirpath)
+
         projects = []
-        for i, folder in enumerate([f for f in os.listdir(self.path) if os.path.isdir(f)]):
+        for i, folder in enumerate(folders):
             pid = valid_project_ids[i]
-            p = Project.create_from_spec(pid, self.path, folder, init_notes=True)
+            p = Project(folder, pid)
             projects.append(p)
+        return projects
+
+
+if __name__ == "__main__":
+    s = Schedule("/home/x/dionysus/dionysus/tmp_projset")
+    print(s.projects)

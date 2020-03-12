@@ -15,7 +15,7 @@ class Task:
 
         Args:
             path (str): The full pathname of the file corresponding to this task.
-            id (int): The unique task id.
+            id (str): The unique project + task id, e.g. "a1".
         """
         self.path = path
         self.relative_path = None
@@ -27,13 +27,13 @@ class Task:
         self._refresh()
 
     def __str__(self):
-        return f"<dionysus Task: [({self.priority} {self.status}) {self.name}]>"
+        return f"<dionysus Task {self.id}: ({self.priority} {self.status}) - [{self.name}]>"
 
     def __repr__(self):
         return self.__str__()
 
     @classmethod
-    def create_from_spec(cls, id: int, path_prefix: str, name: str, priority: int, status: str, edit: bool = True):
+    def create_from_spec(cls, id: str, path_prefix: str, name: str, priority: int, status: str, edit: bool = True):
         check_status(status)
         check_priority(priority)
 
@@ -182,12 +182,14 @@ if __name__ == "__main__":
     # t = Task("/home/x/dionysus/dionysus/tmp/{1}[todo] some cool task.md", id=1)
 
     t = Task.create_from_spec(
-        id=5,
+        id="b3",
         path_prefix="/home/x/dionysus/dionysus/tmp",
         name="new spec created from something else2   ",
         priority=3,
         status="todo",
     )
+
+    print(t)
 
     for attr in ["status", "priority", "relative_path", "path", "name", "id",
                  # "content"
