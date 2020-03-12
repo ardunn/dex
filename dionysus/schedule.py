@@ -1,10 +1,8 @@
 import os
+import json
 
-from dionysus.task import Task
 from dionysus.project import  Project
-from dionysus.constants import schedule_fname, valid_project_ids
-
-
+from dionysus.constants import schedule_fname, valid_project_ids, default_schedule
 
 class Schedule:
     def __init__(self, path):
@@ -18,13 +16,16 @@ class Schedule:
         self.path = path
 
         schedule_file = os.path.join(self.path, schedule_fname)
-        if not os.path.exists()
+        if not os.path.exists(schedule_file):
+            with open(schedule_file, "w") as f:
+                json.dump(default_schedule, f)
+            schedule = default_schedule
+        else:
+            with open(schedule_file, "r") as f:
+                schedule = json.load(f)
 
-
-    # dion new [root_dir]
-    @classmethod
-    def create_from_spec(cls, path):
-        pass
+        self.schedule_file = schedule_file
+        self.schedule = schedule
 
     @property
     def projects(self):

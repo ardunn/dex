@@ -30,5 +30,10 @@ editor = "vim"
 print_separator = "-"*30
 
 schedule_fname = f"schedule.{schedule_extension}"
+schedule_all_projects_key = "all"
+default_schedule = {
+    day: schedule_all_projects_key for day in
+    ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+}
 
 valid_project_ids = list(string.ascii_lowercase)
