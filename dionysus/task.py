@@ -1,10 +1,10 @@
 import os
 import re
 import copy
-from typing import Union
+from typing import Iterable
 
 from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv
-from dionysus.exceptions import FileTypeError, StatusError, PriorityError
+from dionysus.exceptions import FileTypeError, StatusError, PriorityError, FileCharacterError, FileOverwriteError
 from dionysus.util import initiate_editor
 
 
@@ -27,10 +27,23 @@ class Task:
         self._refresh()
 
     @classmethod
-    def create_from_spec(cls, path_prefix, name, id, priority, status):
-        path = os.path.join(path_prefix, f"{priority}{status} {name}{task_extension}")
+    def create_from_spec(cls, id, path_prefix, name, priority, status):
+        check_status(status)
+        check_priority(priority)
+        name = process_name(name)
+
+        status_pretty = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=status)
+        priority_pretty = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=priority)
+
+        path = os.path.join(path_prefix, f"{priority_pretty}{status_pretty} {name}{task_extension}")
+        if os.path.exists(path):
+            raise FileOverwriteError(f"The file \'{path}\' already exists.")
         initiate_editor(path)
-        return Task(path, id)
+        t = Task(path, id)
+        # prevent done tasks from not being placed in done folder,
+        # in the weird case the status was done when it was created from spec
+        # t.set_status(status)
+        return t
 
     # todo: turn this into a decorator
     def _refresh(self) -> None:
@@ -42,23 +55,22 @@ class Task:
             n_statuses = sum(statuses_in_path)
 
             if n_statuses == 1:
-                status = status_primitives[statuses_in_path.index(True)]
+                status = qualifier_converter(status_primitives, statuses_in_path, True)
                 priorities_in_path = [p in relative_path for p in priorities_pretty]
                 n_priorities = sum(priorities_in_path)
                 if n_priorities == 1:
-                    priority = priority_primitives[priorities_in_path.index(True)]
+                    priority = qualifier_converter(priority_primitives, priorities_in_path, True)
                 else:
-                    print(priorities_in_path)
-                    raise PriorityError(f"Task {relative_path} in {self.prefix_path} has {n_priorities} priorities. Each task must have one priority. Valid priorities are {priorities_pretty}")
+                    raise PriorityError(f"Task \'{relative_path}\' in \'{self.prefix_path}\' has {n_priorities} priorities. Each task must have one priority. Valid priorities are {priorities_pretty}")
             else:
-                raise StatusError(f"Task {relative_path} in {self.prefix_path} has {n_statuses} statuses. Each task must have one status. Valid statuses are {statuses_pretty}")
+                raise StatusError(f"Task \'{relative_path}\' in \'{self.prefix_path}\' has {n_statuses} statuses. Each task must have one status. Valid statuses are {statuses_pretty}")
         else:
-            raise FileTypeError(f"Task {relative_path} in {self.prefix_path} has invalid extension. Valid extensions are {task_extension}")
+            raise FileTypeError(f"Task \'{relative_path}\' in \'{self.prefix_path}\' has invalid extension. Valid extensions are \'{task_extension}\'")
 
         name = copy.deepcopy(relative_path)
-        for replace in [str(priority), status, task_extension]:
+        for replace in [str(priority), status, task_extension] + list(all_delimiters):
             name = name.replace(replace, "")
-        self.name = name.strip()
+        self.name = process_name(name)
         self.relative_path = relative_path
         self.status = status
         self.priority = priority
@@ -67,56 +79,51 @@ class Task:
             self.content = f.read()
 
     def set_status(self, new_status: str) -> None:
-        if new_status not in status_primitives:
-            raise StatusError(f"Invalid new status {new_status}. Valid statuses are {status_primitives}")
+        check_status(new_status)
+        new_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=new_status)
+        old_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=self.status)
+        new_relpath = self.relative_path.replace(old_status_str, new_status_str)
+
+
+        is_complete = new_status == status_primitives[-1]
+        was_complete = self.status == status_primitives[-1]
+
+        if is_complete and not was_complete:
+            done_dir = os.path.join(self.prefix_path, "done")
+            if not os.path.exists(done_dir):
+                os.mkdir(done_dir)
+            new_path = os.path.join(done_dir, new_relpath)
+        elif was_complete and not is_complete:
+            # assuming the directory isn't goofed up
+            new_path = os.path.join(self.prefix_path, f"../{new_relpath}")
         else:
-            new_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=new_status)
-            old_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=self.status)
-            new_relpath = self.relative_path.replace(old_status_str, new_status_str)
-
-
-            is_complete = new_status == status_primitives[-1]
-            was_complete = self.status == status_primitives[-1]
-
-            if is_complete and not was_complete:
-                done_dir = os.path.join(self.prefix_path, "done")
-                if not os.path.exists(done_dir):
-                    os.mkdir(done_dir)
-                new_path = os.path.join(done_dir, new_relpath)
-            elif was_complete and not is_complete:
-                # assuming the directory isn't goofed up
-                new_path = os.path.join(self.prefix_path, f"../{new_relpath}")
-            else:
-                # it's going to not move from the folder it's in
-                # if it is done, it will stay there
-                # if it is not done, it will stay there
-                new_path = os.path.join(self.prefix_path, new_relpath)
-            os.rename(self.path, new_path)
-            self.path = new_path
-            self._refresh()
-        
-    def rename(self, new_name: str) -> None:
-        if any([delim in new_name for delim in all_delimiters]):
-            raise 
-        new_relpath = self.relative_path.replace(self.name, new_name)
-        new_path = self.os.path.join(self.prefix_path, new_relpath)
+            # it's going to not move from the folder it's in
+            # if it is done, it will stay there
+            # if it is not done, it will stay there
+            new_path = os.path.join(self.prefix_path, new_relpath)
         os.rename(self.path, new_path)
         self.path = new_path
         self._refresh()
 
-    def set_priority(self, new_priority: int):
-        if self.priority not in priority_primitives:
-            raise PriorityError(f"Priority {new_priority} invalid. Valid priorities are {priority_primitives}")
-        else:
-            new_priority_str = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=new_priority)
-            old_priority_str = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=self.priority)
-            new_relative_path = self.relative_path.replace(old_priority_str, new_priority_str)
-            new_path = os.path.join(self.prefix_path, new_relative_path)
-            os.rename(self.path, new_path)
-            self.path = new_path
-            self._refresh()
+    def set_priority(self, new_priority: int) -> None:
+        check_priority(new_priority)
+        new_priority_str = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=new_priority)
+        old_priority_str = qualifier_converter(to_list=priorities_pretty, from_list=priority_primitives, key=self.priority)
+        new_relative_path = self.relative_path.replace(old_priority_str, new_priority_str)
+        new_path = os.path.join(self.prefix_path, new_relative_path)
+        os.rename(self.path, new_path)
+        self.path = new_path
+        self._refresh()
+        
+    def rename(self, new_name: str) -> None:
+        new_name = process_name(new_name)
+        new_relpath = self.relative_path.replace(self.name, new_name)
+        new_path = os.path.join(self.prefix_path, new_relpath)
+        os.rename(self.path, new_path)
+        self.path = new_path
+        self._refresh()
 
-    def view(self):
+    def view(self) -> None:
         formatted = mdv.main(self.content)
         print(formatted)
 
@@ -125,14 +132,37 @@ class Task:
         self._refresh()
 
 
-def qualifier_converter(to_list, from_list, key):
-    print(from_list)
-    print(key)
+def process_name(name: str) -> str:
+    if any([delim in name for delim in all_delimiters]):
+        raise FileCharacterError(f"The characters {all_delimiters} are not allowed in dionysus filenames.")
+    else:
+        return name.strip()
+
+
+def check_priority(priority: int) -> None:
+    if priority not in priority_primitives:
+        raise PriorityError(f"Priority {priority} invalid. Valid priorities are {priority_primitives}")
+
+
+def check_status(status: str) -> None:
+    if status not in status_primitives:
+        raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
+
+
+def qualifier_converter(to_list, from_list, key) -> Iterable:
     return to_list[from_list.index(key)]
 
 
 if __name__ == "__main__":
-    t = Task("/home/x/dionysus/dionysus/tmp/{1}[todo] some cool task.md", id=1)
+    # t = Task("/home/x/dionysus/dionysus/tmp/{1}[todo] some cool task.md", id=1)
+
+    t = Task.create_from_spec(
+        id=5,
+        path_prefix="/home/x/dionysus/dionysus/tmp",
+        name="new spec created from something else2   ",
+        priority=3,
+        status="todo",
+    )
 
     for attr in ["status", "priority", "relative_path", "path", "name", "id",
                  # "content"
@@ -148,4 +178,8 @@ if __name__ == "__main__":
     # t.edit()
     # t.set_priority(1)
 
-    t.view()
+    # t.view()
+
+    # t.rename("  a different cool task ")
+    # t.edit()
+    # t.rename("some cool task")

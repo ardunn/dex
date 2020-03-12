@@ -1,6 +1,3 @@
-from dionysus.constants import statuses_pretty, priorities_pretty, task_extension
-
-
 class DionysusException(BaseException):
     def __init__(self, msg):
         self.msg = msg
@@ -10,6 +7,14 @@ class DionysusException(BaseException):
 
 
 class FileTypeError(DionysusException):
+    pass
+
+
+class FileCharacterError(DionysusException):
+    pass
+
+
+class FileOverwriteError(DionysusException):
     pass
 
 
