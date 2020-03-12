@@ -3,9 +3,7 @@ import re
 import copy
 from typing import Union
 
-import mdv
-
-from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters
+from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv
 from dionysus.exceptions import FileTypeError, StatusError, PriorityError
 from dionysus.util import initiate_editor
 
@@ -75,13 +73,23 @@ class Task:
             new_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=new_status)
             old_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=self.status)
             new_relpath = self.relative_path.replace(old_status_str, new_status_str)
-            
-            if new_status == status_primitives[-1]:
+
+
+            is_complete = new_status == status_primitives[-1]
+            was_complete = self.status == status_primitives[-1]
+
+            if is_complete and not was_complete:
                 done_dir = os.path.join(self.prefix_path, "done")
                 if not os.path.exists(done_dir):
                     os.mkdir(done_dir)
                 new_path = os.path.join(done_dir, new_relpath)
+            elif was_complete and not is_complete:
+                # assuming the directory isn't goofed up
+                new_path = os.path.join(self.prefix_path, f"../{new_relpath}")
             else:
+                # it's going to not move from the folder it's in
+                # if it is done, it will stay there
+                # if it is not done, it will stay there
                 new_path = os.path.join(self.prefix_path, new_relpath)
             os.rename(self.path, new_path)
             self.path = new_path
@@ -118,7 +126,10 @@ class Task:
 
 
 def qualifier_converter(to_list, from_list, key):
+    print(from_list)
+    print(key)
     return to_list[from_list.index(key)]
+
 
 if __name__ == "__main__":
     t = Task("/home/x/dionysus/dionysus/tmp/{1}[todo] some cool task.md", id=1)
@@ -127,7 +138,14 @@ if __name__ == "__main__":
                  # "content"
                  ]:
         a = getattr(t, attr)
-        print(attr, "||||", a, type(a))
+        # print(attr, "||||", a, type(a))
 
-    t.set_status("done")
-    t.edit()
+    # t.set_status("done")
+    # t.edit()
+    # t.set_status("todo")
+
+    # t.set_priority(3)
+    # t.edit()
+    # t.set_priority(1)
+
+    t.view()

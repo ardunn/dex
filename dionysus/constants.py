@@ -1,6 +1,10 @@
+import mdv
+
+mdv.term_columns = 60
+
 lpd = "{"
 rpd = "}"
-priority_primitives = list(range(3))
+priority_primitives = tuple(range(1, 4))
 priorities_pretty = tuple([f"{lpd}{priority}{rpd}" for priority in priority_primitives])
 
 lsd = "["
