@@ -8,6 +8,7 @@ thisdir = os.path.abspath(os.path.dirname(__file__))
 original_filedir = os.path.join(thisdir, "task/good/original")
 edited_filedir = os.path.join(thisdir, "task/good/edited")
 
+
 class TestTask(unittest.TestCase):
 
     # def setUp(self):

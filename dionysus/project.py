@@ -1,6 +1,8 @@
 import os
 
-# os.path.abspath("matscholar")
+from dionysus.task import Task
+
+# os.path.abspath("other important project")
 
 class Project:
     def __init__(self, path):
@@ -10,7 +12,11 @@ class Project:
 
     @property
     def tasks(self):
-       return os.listdir(self.path)
+        tasks = []
+        for f in os.listdir(self.path):
+            fp = os.path.join
+            t = Task(path=f)
+            tasks.append(t)
 
     def rename(self):
         pass

@@ -1,21 +1,18 @@
-lpd = "("
-rpd = ")"
-priority_regex = f"\{lpd}(.*)\{rpd}"
-priority_keyword = "priority"
-priority_str = f"{lpd}{priority_keyword}{rpd}"
+lpd = "{"
+rpd = "}"
+priority_primitives = list(range(3))
+priorities_pretty = tuple([f"{lpd}{priority}{rpd}" for priority in priority_primitives])
 
 lsd = "["
 rsd = "]"
-status_regex = f"\{lsd}(.*)\{rsd}"
-status_mapping = {
-    "1 - todo": "todo",
-    "2 - doing": "doing",
-    "3 - done": "done"
-}
+status_primitives = ("todo", "doing", "done")
+statuses_pretty = tuple([f"{lsd}{status}{rsd}" for status in status_primitives])
 
-status_mapping_inverted = {v: k for k, v in status_mapping.items()}
+
+all_delimiters = (lpd, rpd, lsd, rsd)
 
 task_extension = ".md"
 schedule_extension = ".json"
 
 editor = "vim"
+
