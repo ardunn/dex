@@ -1,6 +1,6 @@
 # Dionysus
 
-#### Dionysus is also an ultra-minimal and opinionated productivity tool.
+#### Dionysus is an ultra-minimal and opinionated productivity tool.
 It tells you what to work on and when. You can create new tasks, edit existing one, 
 or mark them as doing or done. It can also give stats on how long you've been working on what.
 The objective is to get more done in less time without excessive organization or frills. 
