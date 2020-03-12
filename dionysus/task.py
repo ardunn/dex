@@ -3,9 +3,9 @@ import re
 import copy
 from typing import Iterable
 
-from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv
-from dionysus.exceptions import FileTypeError, StatusError, PriorityError, FileCharacterError, FileOverwriteError
-from dionysus.util import initiate_editor
+from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv, done_str
+from dionysus.exceptions import FileTypeError, StatusError, PriorityError, FileOverwriteError
+from dionysus.util import initiate_editor, check_priority, check_status, process_name
 
 
 class Task:
@@ -27,7 +27,7 @@ class Task:
         self._refresh()
 
     @classmethod
-    def create_from_spec(cls, id, path_prefix, name, priority, status):
+    def create_from_spec(cls, id: int, path_prefix: str, name: str, priority: int, status: str):
         check_status(status)
         check_priority(priority)
         name = process_name(name)
@@ -45,7 +45,6 @@ class Task:
         # t.set_status(status)
         return t
 
-    # todo: turn this into a decorator
     def _refresh(self) -> None:
         self.prefix_path = os.path.dirname(self.path)
         relative_path = os.path.relpath(self.path, self.prefix_path)
@@ -83,13 +82,11 @@ class Task:
         new_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=new_status)
         old_status_str = qualifier_converter(to_list=statuses_pretty, from_list=status_primitives, key=self.status)
         new_relpath = self.relative_path.replace(old_status_str, new_status_str)
-
-
-        is_complete = new_status == status_primitives[-1]
-        was_complete = self.status == status_primitives[-1]
+        is_complete = new_status == done_str
+        was_complete = self.status == done_str
 
         if is_complete and not was_complete:
-            done_dir = os.path.join(self.prefix_path, "done")
+            done_dir = os.path.join(self.prefix_path, done_str)
             if not os.path.exists(done_dir):
                 os.mkdir(done_dir)
             new_path = os.path.join(done_dir, new_relpath)
@@ -132,11 +129,8 @@ class Task:
         self._refresh()
 
 
-def process_name(name: str) -> str:
-    if any([delim in name for delim in all_delimiters]):
-        raise FileCharacterError(f"The characters {all_delimiters} are not allowed in dionysus filenames.")
-    else:
-        return name.strip()
+def qualifier_converter(to_list, from_list, key) -> Iterable:
+    return to_list[from_list.index(key)]
 
 
 def check_priority(priority: int) -> None:
@@ -147,10 +141,6 @@ def check_priority(priority: int) -> None:
 def check_status(status: str) -> None:
     if status not in status_primitives:
         raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
-
-
-def qualifier_converter(to_list, from_list, key) -> Iterable:
-    return to_list[from_list.index(key)]
 
 
 if __name__ == "__main__":

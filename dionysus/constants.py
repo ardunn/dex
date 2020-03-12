@@ -11,9 +11,12 @@ lsd = "["
 rsd = "]"
 status_primitives = ("todo", "doing", "done")
 statuses_pretty = tuple([f"{lsd}{status}{rsd}" for status in status_primitives])
+done_str = status_primitives[-1]
 
+tasks_dir_str = "tasks"
+notes_dir_str = "notes"
 
-all_delimiters = (lpd, rpd, lsd, rsd)
+all_delimiters = (lpd, rpd, lsd, rsd, "/")
 
 task_extension = ".md"
 schedule_extension = ".json"
