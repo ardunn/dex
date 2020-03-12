@@ -1,6 +1,6 @@
 import os
 import random
-from typing import List
+from typing import List, Union
 from collections import namedtuple
 
 from dionysus.task import Task
@@ -44,7 +44,7 @@ class Project:
 
         return Project(dest_dir, id)
 
-    def _refresh(self):
+    def _refresh(self) -> None:
         self.prefix_path = os.path.dirname(self.path)
         self.name = os.path.dirname(self.path).split("/")[-1]
         self.tasks_dir = os.path.join(self.path, tasks_dir_str)  # must exist
@@ -59,19 +59,19 @@ class Project:
         if not os.path.exists(self.tasks_dir):
             os.mkdir(self.tasks_dir)
 
-    def rename(self, new_name):
+    def rename(self, new_name) -> None:
         new_name = process_name(new_name)
         new_path = os.path.join(self.prefix_path, new_name)
-        self.path = new_path
         os.rename(self.path, new_path)
+        self.path = new_path
         self._refresh()
 
-    def set_task_priorities(self, priority):
+    def set_task_priorities(self, priority) -> None:
         for task in self.tasks.all:
             task.set_priority(priority)
         self._refresh()
 
-    def create_new_task(self, name, priority, status, edit=True) -> None:
+    def create_new_task(self, name, priority, status, edit=True) -> Task:
         if name in [tn.name for tn in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
         t = Task.create_from_spec(-1, self.tasks_dir, name, priority, status, edit=edit)
@@ -102,14 +102,13 @@ class Project:
                         task_collection["all"].append(t)
         return task_collection
 
-    #############################################################
-    def list_tasks(self):
-        # print(f"\n{print_separator}\nProject {self.name}\n{print_separator}")
-        pass
-
-    def work(self):
-        # return high priority tasks
-        pass
+    def get_highest_priority_task(self) -> Union[List, None]:
+        # return the highest priority task
+        ordered = order_task_collection(self.tasks, limit=1, include_done=False)
+        if ordered:
+            working_task = ordered[0]
+        else:
+            return None
 
 
 def process_id(id: str) -> str:
@@ -119,7 +118,7 @@ def process_id(id: str) -> str:
         raise ValueError("Project Ids must be a length 1 string.")
 
 
-def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done=False) -> List[Task]:
+def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done: bool = False) -> List[Task]:
     """
 
     Order a task collection
@@ -176,6 +175,8 @@ def order_task_collection(task_collection: AttrDict, limit: int = 0, include_don
 
 
 if __name__ == "__main__":
+    import pprint
+
     # p = Project.create_from_spec(
     #     path_prefix="/home/x/dionysus/dionysus/tmp_projset",
     #     id="a",
@@ -185,10 +186,15 @@ if __name__ == "__main__":
 
     p = Project("/home/x/dionysus/dionysus/tmp_projset/proj1", id="a")
 
-    t = p.create_new_task("completed first", 1, "todo", edit=False)
-    t.complete()
+    p.rename("proj2")
+
+    # t = p.create_new_task("completed first", 1, "todo", edit=False)
+    # t.complete()
     # t.set_status()
     # print(p.tasks)
 
-    # ordered = order_task_collection(p.tasks)
-    # print(ordered)
+    ordered = order_task_collection(p.tasks)
+    pprint.pprint(ordered)
+
+    ordered = order_task_collection(p.tasks, include_done=True)
+    pprint.pprint(ordered)

@@ -1,1 +1,2 @@
-# add terminal-markdown-viewer
+mdv==1.7.4
+Click==7.0

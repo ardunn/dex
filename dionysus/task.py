@@ -27,7 +27,7 @@ class Task:
         self._refresh()
 
     def __str__(self):
-        return f"<dionysus Task: [{self.priority} {self.status} {self.name}]>"
+        return f"<dionysus Task: [({self.priority} {self.status}) {self.name}]>"
 
     def __repr__(self):
         return self.__str__()
@@ -57,6 +57,8 @@ class Task:
         return t
 
     def _refresh(self) -> None:
+        if os.path.isdir(self.path):
+            raise FileTypeError("Task cannot be directory!")
         self.prefix_path = os.path.dirname(self.path)
         relative_path = os.path.relpath(self.path, self.prefix_path)
 
@@ -160,7 +162,6 @@ class Task:
     @property
     def todo(self):
         return self.status == todo_str
-
 
 
 def qualifier_converter(to_list, from_list, key) -> Iterable:

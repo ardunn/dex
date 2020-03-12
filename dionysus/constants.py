@@ -1,4 +1,5 @@
 import mdv
+import string
 
 mdv.term_columns = 60
 
@@ -27,3 +28,7 @@ schedule_extension = ".json"
 editor = "vim"
 
 print_separator = "-"*30
+
+schedule_fname = f"schedule.{schedule_extension}"
+
+valid_project_ids = list(string.ascii_lowercase)

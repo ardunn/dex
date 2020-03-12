@@ -1,14 +1,9 @@
 # Dionysus
 
-## This is a work in progress.
-
-#### Dionysus is the Greek god of fertility, fruitfulness, and **productivity.**
-
-#### It is also an ultra-minimal and opinionated productivity tool.
+#### Dionysus is also an ultra-minimal and opinionated productivity tool.
 It tells you what to work on and when. You can create new tasks, edit existing one, 
 or mark them as doing or done. It can also give stats on how long you've been working on what.
 The objective is to get more done in less time without excessive organization or frills. 
-
 
 ![dionysus](./assets/dionysus.jpg)
 
@@ -17,6 +12,24 @@ Commmand-line-aholics. People who like to manage their tasks lists as simple
 files rather than online interfaces. Pretty much no one else.
 
 
+#### Tell me more...
+`dionysus` is built on a few core assumptions:
+
+1. Choosing what to work on is hard, especially when you have many projects and tasks.
+2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks.
+3. Tasks have higher and lower priorities.
+
+Using these heuristics and your project schedule, `dionysus` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dionysus` works best when you define tasks which require approximately equal time.
+
+
+
+
+### Usage
+
+
+
+
+### File format
 #### It works with task lists in a very specific format:
 - Your projects are folders. 
 - Your tasks are markdown files in a `task` subfolder.
