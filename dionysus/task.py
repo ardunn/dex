@@ -3,9 +3,9 @@ import re
 import copy
 from typing import Iterable
 
-from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv, done_str
+from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv, done_str, todo_str, doing_str, hold_str
 from dionysus.exceptions import FileTypeError, StatusError, PriorityError, FileOverwriteError
-from dionysus.util import initiate_editor, check_priority, check_status, process_name
+from dionysus.util import initiate_editor, process_name
 
 
 class Task:
@@ -127,6 +127,22 @@ class Task:
     def edit(self) -> None:
         initiate_editor(self.path)
         self._refresh()
+
+    @property
+    def hold(self):
+        return self.priority == hold_str
+
+    @property
+    def done(self):
+        return self.priority == done_str
+
+    @property
+    def doing(self):
+        return self.priority == doing_str
+
+    @property
+    def todo(self):
+        return self.priority == todo_str
 
 
 def qualifier_converter(to_list, from_list, key) -> Iterable:

@@ -4,6 +4,13 @@ from dionysus.constants import editor, all_delimiters
 from dionysus.exceptions import FileCharacterError
 
 
+class AttrDict(dict):
+    """ Syntax candy """
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
 def process_name(name: str) -> str:
     """
     General path name processing.
