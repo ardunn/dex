@@ -53,7 +53,7 @@ class Project:
 
     def _refresh(self) -> None:
         self.prefix_path = os.path.dirname(self.path)
-        self.name = os.path.dirname(self.path).split("/")[-1]
+        self.name = self.path.split("/")[-1]
         self.tasks_dir = os.path.join(self.path, tasks_dir_str)  # must exist
         self.done_dir = os.path.join(self.tasks_dir, done_str)  # ok if this doesn't exist
 
@@ -109,11 +109,11 @@ class Project:
                         task_collection["all"].append(t)
         return task_collection
 
-    def get_highest_priority_task(self) -> Union[List, None]:
+    def get_n_highest_priority_tasks(self, n=1) -> Union[List, None]:
         # return the highest priority task
         ordered = order_task_collection(self.tasks, limit=1, include_done=False)
         if ordered:
-            working_task = ordered[0]
+            working_task = ordered[:n]
         else:
             return None
 

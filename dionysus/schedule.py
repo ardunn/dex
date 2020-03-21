@@ -8,7 +8,6 @@ from dionysus.constants import schedule_fname, valid_project_ids, default_schedu
 class Schedule:
     def __init__(self, path):
         """
-
         Args:
             path: The path of the root directory containing all projects
         """
@@ -28,14 +27,12 @@ class Schedule:
         self.schedule_file = schedule_file
         self.schedule = schedule
 
-    @property
-    def projects(self):
+    def get_projects(self):
         folders = []
         for folder in os.listdir(self.path):
             full_dirpath = os.path.join(self.path, folder)
             if os.path.isdir(full_dirpath):
                 folders.append(full_dirpath)
-
         projects = []
         for i, folder in enumerate(folders):
             pid = valid_project_ids[i]
@@ -43,7 +40,13 @@ class Schedule:
             projects.append(p)
         return projects
 
+    def get_project_map(self):
+        project_map = {}
+        for p in self.get_projects():
+            project_map[p.id] = p
+        return project_map
+
 
 if __name__ == "__main__":
-    s = Schedule("/home/x/dionysus/dionysus/tmp_projset")
-    print(s.projects)
+    s = Schedule("/home/x/dionysus/playground")
+    print(s.get_projects())

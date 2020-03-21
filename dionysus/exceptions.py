@@ -24,3 +24,7 @@ class StatusError(DionysusException):
 
 class PriorityError(DionysusException):
     pass
+
+
+class RootPathError(DionysusException):
+    pass
