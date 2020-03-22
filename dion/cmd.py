@@ -3,13 +3,12 @@ import copy
 import shutil
 
 import click
+import treelib
 
 from dion.schedule import Schedule
 from dion.project import Project
-from dion.task import Task
-from dion.exceptions import RootPathError
-from dion.util import initiate_editor
-from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, schedule_all_projects_key
+from dion.util import initiate_editor, Style
+from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, hold_str, schedule_all_projects_key
 
 '''
 # Top level commands
@@ -50,10 +49,10 @@ dion task [task_id] prio               # set priorities of task
 '''
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
-
 PRIORITY_WARNING = f"Invalid integer priority. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}."
 STATUS_WARNING = f"Invalid status string. Choose from: {status_primitives}"
-
+style = Style()
+status_colormap = {"todo": "b", "doing": "y", "hold": "m", "done": "g"}
 
 def checks_root_path_loc():
     if os.path.exists(CURRENT_ROOT_PATH_LOC):
@@ -80,29 +79,30 @@ def write_path_as_current_root_path(path: str):
 
 
 def get_project_header_str(project):
-    n_doing = len(project.tasks.doing)
-    n_todo = len(project.tasks.todo)
-    n_held = len(project.tasks.hold)
-    n_done = len(project.tasks.done)
-    id_str = f"ID: {project.id}  |  {project.name} [{n_todo} todo, {n_doing} doing, {n_held} on hold, {n_done} done]"
+    id_str = style.format("w", style.format("u", f"Project {project.id}: {project.name}")) + " ["
+    for sp in status_primitives:
+        sp_str = "held" if sp == hold_str else sp
+        id_str += style.format(status_colormap[sp], f"{len(project.tasks[sp])} {sp_str}") + ", "
+    id_str = id_str[:-2] + "]"
     return id_str
 
 
 def print_projects(pmap, show_n_tasks=3, show_done=False):
     for p in pmap.values():
+        tree = treelib.Tree()
         id_str = get_project_header_str(p)
-        print(id_str)
+        tree.create_node(id_str, "header")
         if show_n_tasks:
-            print("-" * len(id_str))
             ordered_tasks = p.get_n_highest_priority_tasks(n=show_n_tasks, include_done=show_done)
             if ordered_tasks:
-                for task in ordered_tasks:
-                    print(f"\t{task.id} ({task.status}) [prio={task.priority}]: {task.name}")
+                for i, task in enumerate(ordered_tasks):
+                    task_txt = f"{task.id} ({task.status}) [prio={task.priority}]: {task.name}"
+                    tree.create_node(task_txt, i, parent="header")
                 if len(p.tasks.all) - len(p.tasks.done) > show_n_tasks:
-                    print("\t...")
-                print("\n")
+                    tree.create_node("...", i + 1, parent="header")
             else:
-                print("No tasks.\n")
+                tree.create_node("No tasks.", parent="header")
+        tree.show(key=lambda node: node.identifier)
 
 
 def ask_for_yn(prompt, action=None):
@@ -117,32 +117,43 @@ def ask_for_yn(prompt, action=None):
         else:
             print("Please enter `y` or `n`")
     else:
-        print("No input recieved. Get to work!")
+        print(style.format("r", "No input recieved. Get to work!"))
         click.Context.exit(1)
 
 
 def print_task_work_interface(task):
-    print(f"Task {task.id}: {task.name}")
+    print(style.format("u", f"Task {task.id}: {task.name}"))
     ask_for_yn("View this task?", action=task.view)
     task.work()
-    print(f"You're now working on '{task.name}'")
+    print(style.format("y", f"You're now working on '{task.name}'"))
     print("Now get to work!")
 
 
-def print_task_collection(task_collection, show_done=False, n_shown=100):
+def print_task_collection(project, show_done=False, n_shown=100):
+    task_collection = project.tasks
     active_statuses = ["todo", "doing", "hold", "done"]
-    if show_done:
+    if not show_done:
         active_statuses.remove("done")
+
+    id_str = get_project_header_str(project)
+    tree = treelib.Tree()
+    tree.create_node(id_str, "header")
+    nid = 0
     for sp in active_statuses:
+        color = status_colormap[sp]
+        tree.create_node(style.format(color, sp.capitalize()), sp, parent="header")
         statused_tasks = task_collection[sp]
-        sp_str = f"{sp.capitalize()} tasks:"
-        print("\t" + sp_str + "\n\t" + "-" * len(sp_str))
         if not statused_tasks:
-            print("\t\tNo tasks.\n")
+            nid += 1
+            tree.create_node("No tasks.", nid, parent=sp)
+            continue
         for i, t in enumerate(statused_tasks):
-            print(f"\t\t{t.id} - {t.name} (priority {t.priority})\n")
+            nid += 1
+            task_txt = f"{t.id} - {t.name} (priority {t.priority})"
+            tree.create_node(style.format(color, task_txt), nid, parent=sp)
             if i >= n_shown:
                 break
+    tree.show(key=lambda node: node.identifier)
 
 
 def check_project_id_exists(pmap, project_id):
@@ -155,7 +166,7 @@ def check_project_id_exists(pmap, project_id):
 def check_task_id_exists(project, tid):
     if tid not in project.task_map.keys():
         print(f"Task ID {tid} invalid. Select from the following tasks in project {project.name}:")
-        print_task_collection(project.tasks)
+        print_task_collection(project)
         click.Context.exit(1)
 
 
@@ -265,9 +276,7 @@ def project_view(ctx, n_shown, by_status, show_done):
         n_shown = int(n_shown)
     p = ctx.obj["PROJECT"]
     if by_status:
-        id_str = get_project_header_str(p)
-        print(id_str)
-        print_task_collection(project.tasks, show_done=show_done, n_shown=n_shown)
+        print_task_collection(p, show_done=show_done, n_shown=n_shown)
     else:
         print_projects({p.id: p}, show_n_tasks=n_shown, show_done=show_done)
 
@@ -340,31 +349,40 @@ def get_task_from_task_id(ctx, task_id):
 # dion tasks
 @cli.command(help="List all (or just some) tasks, ordered by importance.")
 @click.option("--n-shown", "-n", help="Number of tasks shown per project. --tasks-only flattens list.", type=click.INT)
-@click.option("--tasks-only", '-t', is_flag=True, help="Show only tasks, don't organize by project.")
+@click.option("--by-project", '-t', is_flag=True, help="Organize tasks by project.")
 @click.option("--show-done", is_flag=True, help="Include done tasks in output.")
 @click.pass_context
-def tasks(ctx, n_shown, tasks_only, show_done):
+def tasks(ctx, n_shown, by_project, show_done):
     if n_shown is not None:
         n_shown = int(n_shown)
     s = ctx.obj["SCHEDULE"]
     pmap = ctx.obj["PMAP"]
-    if tasks_only:
+    if by_project:
+        if n_shown is None:
+            n_shown = 3
+        print_projects(pmap, show_n_tasks=n_shown)
+    else:
         if n_shown is None:
             n_shown = 10
         ordered = s.get_n_highest_priority_tasks(n=n_shown + 1, include_done=show_done)
         append_ellipses = True if len(ordered) > n_shown else False
         ordered = ordered[:n_shown]
 
+        tree = treelib.Tree()
         header_txt = f"Top {n_shown} tasks from all projects:"
-        print(header_txt + "\n" + "-"*len(header_txt))
-        for t in ordered:
-            print(f"\t{t.id} ({t.status}) [prio={t.priority}]: {t.name}")
+        tree.create_node(style.format("u", header_txt), "header")
+        for i, t in enumerate(ordered):
+            if i < 3:
+                color = "c"
+            elif 8 > i >= 3:
+                color = "y"
+            else:
+                color = "r"
+            task_txt = f"{t.id} ({t.status}) [prio={t.priority}]: {t.name}"
+            tree.create_node(style.format(color, task_txt), i, parent="header")
         if append_ellipses:
-            print("\t...")
-    else:
-        if n_shown is None:
-            n_shown = 3
-        print_projects(pmap, show_n_tasks=n_shown)
+            tree.create_node("...", i + 1, parent="header")
+        tree.show(key=lambda node: node.identifier)
 
 
 # dion task

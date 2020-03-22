@@ -14,7 +14,7 @@ done_str = "done"
 doing_str = "doing"
 todo_str = "todo"
 hold_str = "hold"
-status_primitives = (todo_str, doing_str, done_str, hold_str)
+status_primitives = (todo_str, doing_str, hold_str, done_str)
 statuses_pretty = tuple([f"{lsd}{status}{rsd}" for status in status_primitives])
 
 tasks_dir_str = "tasks"
