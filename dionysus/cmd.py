@@ -219,23 +219,25 @@ def tasks():
 # dion project
 # @cli.command()
 @cli.group(invoke_without_command=False)
+@click.argument("project_id", type=click.STRING)
 @click.pass_context
-def project(ctx):
+def project(ctx, project_id):
     checks_root_path_loc()
     s = Schedule(path=get_current_root_path())
     pmap = s.get_project_map()
     ctx.obj["SCHEDULE"] = s
     ctx.obj["PMAP"] = pmap
+    check_project_id_exists(pmap, project_id)
+    ctx.obj["PROJECT"] = pmap[project_id]
 
 
 # dion project work [project_id]
 @project.command(name="work")
-@click.argument("project_id", type=click.STRING)
+# @click.argument("project_id", type=click.STRING)
 @click.pass_context
-def project_work(ctx, project_id):
-    pmap = ctx.obj["PMAP"]
-    check_project_id_exists(pmap, project_id)
-    t = pmap[project_id].get_n_highest_priority_tasks(n=1)[0]
+def project_work(ctx):
+    p = ctx.obj["PROJECT"]
+    t = p.get_n_highest_priority_tasks(n=1)[0]
     print_task_work_interface(t)
 
 
