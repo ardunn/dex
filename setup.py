@@ -14,7 +14,7 @@ long_description = \
 setup(
     name='dionysus',
     version=str(version),
-    description='Black box optimization with Fireworks workflows, on rails',
+    description='A command line productivity tool.',
     url='https://github.com/ardunn/dionysus',
     author='Alex Dunn',
     author_email='denhaus@gmail.com',
@@ -23,13 +23,17 @@ setup(
     license='modified BSD',
     classifiers=[
         'Development Status :: 3 - Alpha',
-        ],
+    ],
     keywords='productivity',
-    test_suite='rocketsled',
+    test_suite='dionysus',
     tests_require='tests',
     packages=find_packages(),
     # package_data={'rocketsled': ['defaults.yaml']},
     install_requires=requirements,
     # data_files=['LICENSE', 'README.md', 'VERSION'],
-    include_package_data=True
+    include_package_data=True,
+    entry_points='''
+        [console_scripts]
+        dion=dionysus.cmd:cli
+    ''',
 )
