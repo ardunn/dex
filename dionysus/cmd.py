@@ -84,18 +84,19 @@ def get_project_header_str(project):
     return id_str
 
 
-def print_projects(pmap, show_n_tasks=3):
+def print_projects(pmap, show_n_tasks=3, show_done=False):
     for p in pmap.values():
         id_str = get_project_header_str(p)
         print(id_str)
         if show_n_tasks:
             print("-" * len(id_str))
-            ordered_tasks = p.get_n_highest_priority_tasks(n=show_n_tasks)
+            ordered_tasks = p.get_n_highest_priority_tasks(n=show_n_tasks, include_done=show_done)
             if ordered_tasks:
                 for task in ordered_tasks:
-                    print(f"\t{task.id}: {task.name}")
+                    print(f"\t{task.id} ({task.status}) [prio={task.priority}]: {task.name}")
+                if len(p.tasks.all) - len(p.tasks.done) > show_n_tasks:
                     print("\t...")
-                    print("\n")
+                print("\n")
             else:
                 print("No tasks.\n")
 
@@ -104,7 +105,7 @@ def ask_for_yn(prompt, action=None):
     for i in range(3):
         ans = input(f"{prompt} (y/n) ").lower()
         if ans in ("y", "yes"):
-            if not isinstance(action, None):
+            if not isinstance(action, type(None)):
                 action()
             return True
         elif ans in ("n", "no"):
@@ -124,15 +125,18 @@ def print_task_work_interface(task):
     print("Now get to work!")
 
 
-def print_task_collection(task_collection):
-    for sp in ["todo", "doing", "hold", "done"]:
+def print_task_collection(task_collection, show_done=False):
+    active_statuses = ["todo", "doing", "hold", "done"]
+    if show_done:
+        active_statuses.remove("done")
+    for sp in active_statuses:
         statused_tasks = task_collection[sp]
         sp_str = f"{sp.capitalize()} tasks:"
-        print(sp_str + "\n" + "-" * len(sp_str))
+        print("\t" + sp_str + "\n\t" + "-" * len(sp_str))
         if not statused_tasks:
-            print("No tasks.\n")
+            print("\t\tNo tasks.\n")
         for t in statused_tasks:
-            print(f"\t{t.id} - {t.name} (priority {t.priority})\n")
+            print(f"\t\t{t.id} - {t.name} (priority {t.priority})\n")
 
 
 def check_project_id_exists(pmap, project_id):
@@ -143,8 +147,9 @@ def check_project_id_exists(pmap, project_id):
 
 
 def check_task_id_exists(project, tid):
-    if tid not in project.tasks.all:
+    if tid not in project.task_map.keys():
         print(f"Task ID {tid} invalid. Select from the following tasks in project {project.name}:")
+        print_task_collection(project.tasks)
         click.Context.exit(1)
 
 
@@ -160,9 +165,11 @@ def cli(ctx):
 
 
 # Root level commands
+
+# dion init
 @cli.command()
 @click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
-def init(ctx, path):
+def init(path):
     descriptor = "existing" if os.path.exists(path) else "new"
     s = Schedule(path=path)
     write_path_as_current_root_path(s.path)
@@ -171,8 +178,7 @@ def init(ctx, path):
 
 # dion schedule
 @cli.command()
-@click.pass_context
-def schedule(ctx):
+def schedule():
     s = Schedule(path=get_current_root_path())
     initiate_editor(s.schedule_file)
     print(f"Weekly schedule at {s.schedule_file} written.")
@@ -180,8 +186,7 @@ def schedule(ctx):
 
 # dion work
 @cli.command()
-@click.pass_context
-def work(ctx, path):
+def work():
     checks_root_path_loc()
     s = Schedule(path=get_current_root_path())
     t = s.get_n_highest_priority_tasks(1)[0]
@@ -190,8 +195,7 @@ def work(ctx, path):
 
 # dion projects
 @cli.command()
-@click.pass_context
-def projects(ctx):
+def projects():
     checks_root_path_loc()
     s = Schedule(path=get_current_root_path())
     pmap = s.get_project_map()
@@ -203,8 +207,7 @@ def projects(ctx):
 
 # dion tasks
 @cli.command()
-@click.pass_context
-def tasks(ctx):
+def tasks():
     checks_root_path_loc()
     s = Schedule(path=get_current_root_path())
     pmap = s.get_project_map()
@@ -240,18 +243,19 @@ def project_work(ctx, project_id):
 @project.command(name="view")
 @click.argument("project_id", type=click.STRING)
 @click.option("--by-status", is_flag=True)
+@click.option("--show-done", is_flag=True)
 @click.pass_context
-def project_view(ctx, project_id, by_status):
+def project_view(ctx, project_id, by_status, show_done):
     pmap = ctx.obj["PMAP"]
     check_project_id_exists(pmap, project_id)
     if by_status:
         project = pmap[project_id]
         id_str = get_project_header_str(project)
         print(id_str)
-        print_task_collection(project.tasks)
+        print_task_collection(project.tasks, show_done=show_done)
     else:
         single_project_pmap = {project_id: pmap[project_id]}
-        print_projects(single_project_pmap, show_n_tasks=100)
+        print_projects(single_project_pmap, show_n_tasks=100, show_done=show_done)
 
 
 # dion project prio [project_id]
@@ -408,18 +412,13 @@ def task_prio(ctx, task_id, priority):
         print(f"Priority is set according to an integer. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}.")
         click.Context.exit(1)
     t.set_priority(priority)
-    print(f"Task {task_id}: '{t.name}' edited.")
+    print(f"Task {task_id}: '{t.name}' priority set to {t.priority}.")
 
 
 # dion task new
-#     ----> asks for project id
-#     ----> asks for task name
-#     ----> asks for priority
-#     ----> asks for status
-#     ----> asks to edit content, then does it if wanted
-@task.command(name="prio")
+@task.command(name="new")
 @click.pass_context
-def task_prio(ctx):
+def task_new(ctx):
     pmap = ctx.obj["PMAP"]
 
     # select project
@@ -427,20 +426,21 @@ def task_prio(ctx):
     print(header_txt + "\n" + "-"*len(header_txt))
     print_projects(pmap, show_n_tasks=0)
     project_id = input("Project ID: ")
-    print("\n")
     check_project_id_exists(pmap, project_id)
     project = pmap[project_id]
 
     # enter task specifics
     task_name = input("Enter a name for this task: ")
-    task_prio = input(f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): ")
-    task_status = status_primitives[0]
+    task_prio = int(input(f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): "))
     task_status = input(f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: ")
+    if not task_status:
+        task_status = "todo"
     edit_content = ask_for_yn("Edit the task's content?", action=None)
 
     # create new task
     t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
-    print(f"Task {t.id}: '{t.name} created with priority {t.priority} and status {t.status}.")
+    footer_txt = f"Task {t.id}: '{t.name}' created with priority {t.priority} and status '{t.status}'."
+    print("\n" + "-"*len(footer_txt) + "\n" + footer_txt)
 
 
 if __name__ == '__main__':

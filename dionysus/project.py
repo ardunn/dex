@@ -83,8 +83,9 @@ class Project:
         if name in [tn.name for tn in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
 
-        all_task_numbers = [int(copy.deepcopy(t.id).remove(self.id)) for t in self.tasks]
-        new_task_number = max(all_task_numbers + 1)
+        all_task_numbers = [int(copy.deepcopy(t.id).replace(self.id, "")) for t in self.tasks.all]
+        max_task_numbers = max(all_task_numbers) if all_task_numbers else 0
+        new_task_number = max_task_numbers + 1
         new_task_id = f"{self.id}{new_task_number}"
         t = Task.create_from_spec(new_task_id, self.tasks_dir, name, priority, status, edit=edit)
         self._refresh()
@@ -118,9 +119,9 @@ class Project:
     def task_map(self):
         return {t.id: t for t in self.tasks.all}
 
-    def get_n_highest_priority_tasks(self, n=1) -> Union[List, None]:
+    def get_n_highest_priority_tasks(self, n=1, include_done=False) -> Union[List, None]:
         # return the highest priority task
-        ordered = order_task_collection(self.tasks, limit=n, include_done=False)
+        ordered = order_task_collection(self.tasks, limit=n, include_done=include_done)
         if ordered:
             return ordered[:n]
         else:
@@ -145,7 +146,7 @@ if __name__ == "__main__":
     #     init_notes=True
     # )
 
-    p = Project("/home/x/dionysus/dionysus/tmp_projset/proj2", id="a")
+    p = Project("/home/x/dionysus/playground/project1812", id="a")
 
     # p.rename("proj2")
 
@@ -154,8 +155,10 @@ if __name__ == "__main__":
     # t.set_status()
     # print(p.tasks)
 
-    ordered = order_task_collection(p.tasks)
-    pprint.pprint(ordered)
+    print(p.tasks)
 
-    ordered = order_task_collection(p.tasks, include_done=True)
-    pprint.pprint(ordered)
+    # ordered = order_task_collection(p.tasks)
+    # pprint.pprint(ordered)
+    #
+    # ordered = order_task_collection(p.tasks, include_done=True)
+    # pprint.pprint(ordered)

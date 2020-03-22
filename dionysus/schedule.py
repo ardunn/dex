@@ -7,6 +7,7 @@ from dionysus.project import Project
 from dionysus.constants import schedule_fname, valid_project_ids, default_schedule
 from dionysus.logic import order_task_collection
 from dionysus.constants import status_primitives
+from dionysus.util import AttrDict
 
 
 class Schedule:
@@ -60,6 +61,7 @@ class Schedule:
         all_todays_tasks = {}
         for sp in status_primitives:
             all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
+        all_todays_tasks = AttrDict(all_todays_tasks)
         ordered = order_task_collection(all_todays_tasks, limit=n)
         return ordered
 
