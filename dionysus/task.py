@@ -147,6 +147,9 @@ class Task:
     def complete(self):
         self.set_status(done_str)
 
+    def put_on_hold(self):
+        self.set_status(hold_str)
+
     @property
     def hold(self):
         return self.status == hold_str

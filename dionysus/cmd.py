@@ -34,23 +34,19 @@ dion project rm [project_id]                 # delete a project
 # Task commands
 --------------------
 dion task work [task_id]               # work on a specific task
-dion task done [task_id]s              # mark a task or tasks as done
-dion task hold [task_id]s              # hold a task
+dion task done [task_id]               # mark a task as done
+dion task hold [task_id]               # hold a task
 dion task rename [task_id]             # rename a task
 dion task edit [task_id]               # edit a task
-dion task view [task_id]s              # view a task
-dion task prio [task_id]s              # set priorities of tasks
+dion task view [task_id]               # view a task
+dion task prio [task_id]               # set priorities of task
 dion task new                          # create a new task
     ----> asks for task name
     ----> asks for project id
     ----> asks for priority
     ----> asks for status
     ----> asks to edit content, then does it if wanted
-
-dion task set_status [task_id]s      # manually set status of tasks
 '''
-
-
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
 
@@ -128,30 +124,25 @@ def print_task_collection(task_collection):
     for sp in ["todo", "doing", "hold", "done"]:
         statused_tasks = task_collection[sp]
         sp_str = f"{sp.capitalize()} tasks:"
-        print(sp_str + "\n" + "-"*len(sp_str))
+        print(sp_str + "\n" + "-" * len(sp_str))
         if not statused_tasks:
             print("No tasks.\n")
         for t in statused_tasks:
             print(f"\t{t.id} - {t.name} (priority {t.priority})\n")
 
 
-def check_project_id_exists(pmap, project_id, exit_context=True):
+def check_project_id_exists(pmap, project_id):
     if project_id not in pmap.keys():
         print(f"Project ID {project_id} invalid. Select from the following projects:")
         print_projects(pmap, show_n_tasks=0)
-        if exit_context:
-            click.Context.exit(1)
+        click.Context.exit(1)
 
 
-def check_task_id_exists(project, tid, exit_context=True):
+def check_task_id_exists(project, tid):
     if tid not in project.tasks.all:
         print(f"Task ID {tid} invalid. Select from the following tasks in project {project.name}:")
-        if exit_context:
-            click.Context.exit(1)
+        click.Context.exit(1)
 
-
-def parse_multiple_task_ids(task_ids):
-    return task_ids.split(",")
 
 # CLI - level commands
 
@@ -275,13 +266,13 @@ def project_prio(ctx, project_id, priority):
 # dion project rename [project_id]
 @project.command(name="rename")
 @click.argument("project_id", type=click.STRING)
-@click.argument("new_name", type=click.STRING)
 @click.pass_context
-def project_rename(ctx, project_id, new_name):
+def project_rename(ctx, project_id):
     pmap = ctx.obj["PMAP"]
     check_project_id_exists(project_id)
     p = pmap[project_id]
     old_name = copy.deepcopy(p.name)
+    new_name = input("New project name: ")
     p.rename(new_name)
     print(f"Project '{old_name}' renamed to '{p.name}.")
 
@@ -320,6 +311,17 @@ def project_rm(ctx, project_id):
 
 # Task level commands
 
+
+def get_task_from_task_id(ctx, task_id):
+    pmap = ctx.obj["PMAP"]
+    project_id = task_id[0]
+    check_project_id_exists(pmap, project_id)
+    p = pmap[project_id]
+    check_task_id_exists(p, task_id)
+    t = p.task_map[task_id]
+    return t
+
+
 # dion task
 @cli.group(invoke_without_command=False)
 @click.pass_context
@@ -330,36 +332,80 @@ def task(ctx):
     ctx.obj["SCHEDULE"] = s
     ctx.obj["PMAP"] = pmap
 
+
 # dion task work [task_id]
 @task.command(name="work")
-@click.argument("task_ids", type=click.STRING)
-@click.pass_context
-def task_work(ctx, task_ids):
-    pmap = ctx.obj["PMAP"]
-    for task_id in parse_multiple_task_ids(task_idsk):
-        project_id = task_id[0]
-        check_project_id_exists(pmap, project_id, exit_context=False)
-        p = pmap[project_id]
-        check_task_id_exists(p, task_id, exit_context=False)
-        t = p.task_map[task_id]
-        print_task_work_interface(t)
-
-# done hold rename edit view prio new set_status
-
-# dion task done [task_id]s
-@task.command(name="done")
 @click.argument("task_id", type=click.STRING)
 @click.pass_context
 def task_work(ctx, task_id):
-    pmap = ctx.obj["PMAP"]
-    project_id = task_id[0]
+    t = get_task_from_task_id(ctx, task_id)
+    print_task_work_interface(t)
 
 
-@cli.command()
-@click.argument("input_string", type=click.STRING)
+# dion task done [task_id]
+@task.command(name="done")
+@click.argument("task_id", type=click.STRING)
 @click.pass_context
-def test_multiple(ctx, input_string):
-    print(input_string)
+def task_done(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    t.complete()
+    print(f"Task {task_id} completed.")
+
+
+# dion task hold [task_id]
+@task.command(name="hold")
+@click.argument("task_id", type=click.STRING)
+@click.pass_context
+def task_hold(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    t.put_on_hold()
+    print(f"Task {task_id} completed.")
+
+
+# dion task rename [task_id]
+@task.command(name="rename")
+@click.argument("task_id", type=click.STRING)
+@click.pass_context
+def task_hold(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    old_name = copy.deepcopy(t.name)
+    new_name = input("New name: ")
+    t.rename(new_name)
+    print(f"Task {task_id} renamed from '{old_name}' to '{t.name}'.")
+
+
+# dion task edit [task_id]
+@task.command(name="edit")
+@click.argument("task_id", type=click.STRING)
+@click.pass_context
+def task_edit(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    t.edit()
+    print(f"Task {task_id}: '{t.name}' edited.")
+
+
+# dion task view [task_id]
+@task.command(name="view")
+@click.argument("task_id", type=click.STRING)
+@click.pass_context
+def task_view(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    t.view()
+
+
+# dion task prio [task_id]
+@task.command(name="prio")
+@click.argument("task_id", type=click.STRING)
+@click.argument("priority", type=click.INT)
+@click.pass_context
+def task_prio(ctx, task_id):
+    t = get_task_from_task_id(ctx, task_id)
+    t.set_priority()
+    print(f"Task {task_id}: '{t.name}' edited.")
+
+
+
+# view prio new
 
 
 if __name__ == '__main__':
