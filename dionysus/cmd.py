@@ -256,12 +256,13 @@ def project_work(ctx):
 
 # dion project [project_id] view
 @project.command(name="view", help="View all tasks for a single project.")
-@click.option("--n-shown", "-n", default=20, help="Number of tasks to show.")
+@click.option("--n-shown", "-n", default=20, help="Number of tasks to show.", type=click.INT)
 @click.option("--by-status", is_flag=True, help="Organize tasks by status.")
 @click.option("--show-done", is_flag=True, help="Include done tasks in output.")
 @click.pass_context
 def project_view(ctx, n_shown, by_status, show_done):
-    n_shown = int(n_shown)
+    if n_shown is not None:
+        n_shown = int(n_shown)
     p = ctx.obj["PROJECT"]
     if by_status:
         id_str = get_project_header_str(p)
@@ -343,11 +344,12 @@ def get_task_from_task_id(ctx, task_id):
 @click.option("--show-done", is_flag=True, help="Include done tasks in output.")
 @click.pass_context
 def tasks(ctx, n_shown, tasks_only, show_done):
-    n_shown = int(n_shown)
+    if n_shown is not None:
+        n_shown = int(n_shown)
     s = ctx.obj["SCHEDULE"]
     pmap = ctx.obj["PMAP"]
     if tasks_only:
-        if not n_shown:
+        if n_shown is None:
             n_shown = 10
         ordered = s.get_n_highest_priority_tasks(n=n_shown + 1, include_done=show_done)
         append_ellipses = True if len(ordered) > n_shown else False
@@ -360,7 +362,7 @@ def tasks(ctx, n_shown, tasks_only, show_done):
         if append_ellipses:
             print("\t...")
     else:
-        if not n_shown:
+        if n_shown is None:
             n_shown = 3
         print_projects(pmap, show_n_tasks=n_shown)
 
