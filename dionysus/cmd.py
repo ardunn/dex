@@ -9,25 +9,25 @@ from dionysus.project import Project
 from dionysus.task import Task
 from dionysus.exceptions import RootPathError
 from dionysus.util import initiate_editor
-from dionysus.constants import valid_project_ids, priority_primitives, status_primitives, done_str
+from dionysus.constants import valid_project_ids, priority_primitives, status_primitives, done_str, schedule_all_projects_key
 
 '''
 # Top level commands
 --------------------
 dion init [root path]                 # create a new schedule file and save the path somewhere
-dion schedule                         # edit the schedule file
 dion work                             # print and start work on the highest importance task, printing project_id+tid and all info
 
 
-# View commands
---------------------
-dion view schedule                         # view weekly schedule
-dion view projects                         # show all projects, ordered by sum of importances of tasks
-dion view tasks                            # view ordered tasks across all projects
+# Schedule commands
+-------------------
+dion schedule                          # view weekly schedule
+dion schedule edit                     # edit the schedule file
 
 
 # Project commands
 -------------------
+dion projects                                # show all projects, ordered by sum of importances of tasks
+dion project new                             # make new project and return project id, then show all project-ids
 dion project [project_id] work               # work on a task, only for this project
 dion project [project_id] view               # view a projects tasks in order of importance
 dion project [project_id] prio               # +/- priority of all tasks for a particular project
@@ -37,6 +37,8 @@ dion project [project_id] rm                 # delete a project
 
 # Task commands
 --------------------
+dion tasks                             # view ordered tasks across all projects
+dion task new                          # make a new task
 dion task [task_id] work               # work on a specific task
 dion task [task_id] done               # mark a task as done
 dion task [task_id] hold               # hold a task
@@ -45,15 +47,6 @@ dion task [task_id] edit               # edit a task
 dion task [task_id] view               # view a task
 dion task [task_id] prio               # set priorities of task
 
-# New commands
---------------------
-dion new task                       # make new project and return project id, then show all project-ids
-dion new task                          # create a new task
-    ----> asks for task name
-    ----> asks for project id
-    ----> asks for priority
-    ----> asks for status
-    ----> asks to edit content, then does it if wanted
 '''
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
@@ -190,15 +183,6 @@ def init(path):
     click.echo(f"{descriptor.capitalize()} schedule initialized in path: {path}")
 
 
-# dion schedule
-@cli.command()
-@click.pass_context
-def schedule(ctx):
-    s = ctx.obj["SCHEDULE"]
-    initiate_editor(s.schedule_file)
-    print(f"Weekly schedule at {s.schedule_file} written.")
-
-
 # dion work
 @cli.command()
 @click.pass_context
@@ -208,29 +192,8 @@ def work(ctx):
     print_task_work_interface(t)
 
 
-# View commands ########################################################################################################
-# dion view
-@cli.group(invoke_without_command=False)
-@click.pass_context
-def view(ctx):
-    pass
-
-
-# dion view schedule
-@view.command()
-@click.pass_context
-def schedule(ctx):
-    s = ctx.obj["SCHEDULE"]
-    pmap = ctx.obj["PMAP"]
-    for day, project_ids in s.items():
-        projects_str = ""
-        for pid in project_ids:
-            projects_str += f"'{pmap[pid]}', "
-        print(f"\t{day}: {projects_str[:-2]}")
-
-
-# dion view projects
-@view.command()
+# dion projectss
+@cli.command()
 @click.pass_context
 def projects(ctx):
     s = ctx.obj["SCHEDULE"]
@@ -241,12 +204,39 @@ def projects(ctx):
 
 
 # dion view tasks
-@view.command()
+@cli.command()
 @click.option("--n-shown", default=3)
 @click.pass_context
 def tasks(ctx, n_shown):
     pmap = ctx.obj["PMAP"]
     print_projects(pmap, show_n_tasks=n_shown)
+
+
+# Schedule level commands ##############################################################################################
+# dion schedule
+@cli.group(invoke_without_command=True)
+@click.pass_context
+def schedule(ctx):
+    s = ctx.obj["SCHEDULE"]
+    pmap = ctx.obj["PMAP"]
+    for day, project_ids in s.schedule.items():
+        if project_ids == schedule_all_projects_key:
+            valid_pids = list(pmap.keys())
+        else:
+            valid_pids = project_ids
+        projects_str = ""
+        for pid in valid_pids:
+            projects_str += f"'{pmap[pid].name}', "
+        print(f"{day}: {projects_str[:-2]}")
+
+
+# dion schedule edit
+@schedule.command(name="edit")
+@click.pass_context
+def schedule_edit(ctx):
+    s = ctx.obj["SCHEDULE"]
+    initiate_editor(s.schedule_file)
+    print(f"Weekly schedule at {s.schedule_file} written.")
 
 
 # Project level commands ###############################################################################################
@@ -266,7 +256,6 @@ def project(ctx, project_id):
 
 # dion project [project_id] work
 @project.command(name="work")
-# @click.argument("project_id", type=click.STRING)
 @click.pass_context
 def project_work(ctx):
     p = ctx.obj["PROJECT"]
@@ -323,6 +312,25 @@ def project_rm(ctx, project_id):
     shutil.rmtree(p.path)
     print(f"Project {name} removed.")
 
+# dion project new
+@project.command(name="project")
+@click.option("--init-notes", is_flag=False)
+@click.pass_context
+def new_project(ctx, init_notes):
+    project_name = input("Enter new project name: ")
+    current_pids = ctx.obj["PMAP"].keys()
+    remaining_pids = copy.deepcopy(valid_project_ids)
+    s = ctx.obj["SCHEDULE"]
+    for pid in current_pids:
+        remaining_pids.remove(pid)
+    new_pid = remaining_pids[0]
+    print(f"DEBUG: no init notes is {init_notes}")
+    p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=init_notes)
+    s = Schedule(get_current_root_path())
+    print(f"Project `{p.name}` added.")
+    print(f"All projects:")
+    print_projects(s.get_project_map(), show_n_tasks=0)
+
 
 # Task level commands ##################################################################################################
 def get_task_from_task_id(ctx, task_id):
@@ -340,7 +348,7 @@ def get_task_from_task_id(ctx, task_id):
 @click.argument("task_id", type=click.STRING)
 @click.pass_context
 def task(ctx, task_id):
-    ctx.obj["TASK"] = get_task_from_task_id(task_id)
+    ctx.obj["TASK"] = get_task_from_task_id(ctx, task_id)
 
 # dion task [task_id] work
 @task.command(name="work")
@@ -409,36 +417,8 @@ def task_prio(ctx, priority):
     print(f"Task {t.id}: '{t.name}' priority set to {t.priority}.")
 
 
-# Creating new things ##################################################################################################
-# dion new
-@cli.group(invoke_without_command=False)
-@click.pass_context
-def new(ctx):
-    pass
-
-
-# dion new project
-@new.command(name="project")
-@click.option("--init-notes", is_flag=False)
-@click.pass_context
-def new_project(ctx, init_notes):
-    project_name = input("Enter new project name: ")
-    current_pids = ctx.obj["PMAP"].keys()
-    remaining_pids = copy.deepcopy(valid_project_ids)
-    s = ctx.obj["SCHEDULE"]
-    for pid in current_pids:
-        remaining_pids.remove(pid)
-    new_pid = remaining_pids[0]
-    print(f"DEBUG: no init notes is {init_notes}")
-    p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=init_notes)
-    s = Schedule(get_current_root_path())
-    print(f"Project `{p.name}` added.")
-    print(f"All projects:")
-    print_projects(s.get_project_map(), show_n_tasks=0)
-
-
-# dion new task
-@new.command(name="task")
+# dion task new
+@task.command(name="task")
 @click.pass_context
 def new_task(ctx):
     pmap = ctx.obj["PMAP"]
