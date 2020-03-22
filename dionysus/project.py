@@ -109,6 +109,10 @@ class Project:
                         task_collection["all"].append(t)
         return task_collection
 
+    @property
+    def task_map(self):
+        return {t.id: t for t in self.tasks.all}
+
     def get_n_highest_priority_tasks(self, n=1) -> Union[List, None]:
         # return the highest priority task
         ordered = order_task_collection(self.tasks, limit=n, include_done=False)
