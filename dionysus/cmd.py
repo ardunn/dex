@@ -174,7 +174,7 @@ def cli(ctx):
 
 # Root level commands ##################################################################################################
 # dion init
-@cli.command()
+@cli.command(help="Initialize a new set of projects. You can only have one active.")
 @click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
 def init(path):
     descriptor = "existing" if os.path.exists(path) else "new"
@@ -184,7 +184,7 @@ def init(path):
 
 
 # dion work
-@cli.command()
+@cli.command(help="Automatically determine most important task and start work.")
 @click.pass_context
 def work(ctx):
     s = ctx.obj["SCHEDULE"]
@@ -192,29 +192,9 @@ def work(ctx):
     print_task_work_interface(t)
 
 
-# dion projectss
-@cli.command()
-@click.pass_context
-def projects(ctx):
-    s = ctx.obj["SCHEDULE"]
-    if s.get_projects():
-        print_projects(s.get_project_map(), show_n_tasks=0)
-    else:
-        print("No projects. Use 'dion project new' to create a new project.")
-
-
-# dion view tasks
-@cli.command()
-@click.option("--n-shown", default=3)
-@click.pass_context
-def tasks(ctx, n_shown):
-    pmap = ctx.obj["PMAP"]
-    print_projects(pmap, show_n_tasks=n_shown)
-
-
 # Schedule level commands ##############################################################################################
 # dion schedule
-@cli.group(invoke_without_command=True)
+@cli.group(invoke_without_command=True, help="Weekly schedule related commands.")
 @click.pass_context
 def schedule(ctx):
     s = ctx.obj["SCHEDULE"]
@@ -231,7 +211,7 @@ def schedule(ctx):
 
 
 # dion schedule edit
-@schedule.command(name="edit")
+@schedule.command(name="edit", help="Edit your weekly schedule via project ids.")
 @click.pass_context
 def schedule_edit(ctx):
     s = ctx.obj["SCHEDULE"]
@@ -240,8 +220,19 @@ def schedule_edit(ctx):
 
 
 # Project level commands ###############################################################################################
+# dion projects
+@cli.command(help="List all projects.")
+@click.pass_context
+def projects(ctx):
+    s = ctx.obj["SCHEDULE"]
+    if s.get_projects():
+        print_projects(s.get_project_map(), show_n_tasks=0)
+    else:
+        print("No projects. Use 'dion project new' to create a new project.")
+
+
 # dion project
-@cli.group(invoke_without_command=False)
+@cli.group(invoke_without_command=False, help="Commands for a single project.")
 @click.argument("project_id", type=click.STRING)
 @click.pass_context
 def project(ctx, project_id):
@@ -255,7 +246,7 @@ def project(ctx, project_id):
 
 
 # dion project [project_id] work
-@project.command(name="work")
+@project.command(name="work", help="Automatically determine most important task in a project.")
 @click.pass_context
 def project_work(ctx):
     p = ctx.obj["PROJECT"]
@@ -264,12 +255,13 @@ def project_work(ctx):
 
 
 # dion project [project_id] view
-@project.command(name="view")
-@click.option("--by-status", is_flag=True)
-@click.option("--show-done", is_flag=True)
-@click.option("--n-shown", default=3)
+@project.command(name="view", help="View all tasks for a single project.")
+@click.option("--n-shown", "-n", default=20, help="Number of tasks to show.")
+@click.option("--by-status", is_flag=True, help="Organize tasks by status.")
+@click.option("--show-done", is_flag=True, help="Include done tasks in output.")
 @click.pass_context
-def project_view(ctx, by_status, show_done, n_shown):
+def project_view(ctx, n_shown, by_status, show_done):
+    n_shown = int(n_shown)
     p = ctx.obj["PROJECT"]
     if by_status:
         id_str = get_project_header_str(p)
@@ -280,7 +272,7 @@ def project_view(ctx, by_status, show_done, n_shown):
 
 
 # dion project [project_id] prio
-@project.command(name="prio")
+@project.command(name="prio", help="Set all priorities for a project.")
 @click.argument("priority", type=click.INT)
 @click.pass_context
 def project_prio(ctx, priority):
@@ -290,7 +282,7 @@ def project_prio(ctx, priority):
 
 
 # dion project [project_id] rename
-@project.command(name="rename")
+@project.command(name="rename", help="Rename a project.")
 @click.pass_context
 def project_rename(ctx):
     p = ctx.obj["PROJECT"]
@@ -301,7 +293,7 @@ def project_rename(ctx):
 
 
 # dion project [project_id] rm
-@project.command(name="rm")
+@project.command(name="rm", help="Remove a project and all of its tasks.")
 @click.argument("project_id", type=click.STRING)
 @click.pass_context
 def project_rm(ctx, project_id):
@@ -312,8 +304,9 @@ def project_rm(ctx, project_id):
     shutil.rmtree(p.path)
     print(f"Project {name} removed.")
 
+
 # dion project new
-@project.command(name="project")
+@project.command(name="new", help="Create a new project.")
 @click.option("--init-notes", is_flag=False)
 @click.pass_context
 def new_project(ctx, init_notes):
@@ -343,15 +336,45 @@ def get_task_from_task_id(ctx, task_id):
     return t
 
 
+# dion tasks
+@cli.command(help="List all (or just some) tasks, ordered by importance.")
+@click.option("--n-shown", "-n", help="Number of tasks shown per project. --tasks-only flattens list.", type=click.INT)
+@click.option("--tasks-only", '-t', is_flag=True, help="Show only tasks, don't organize by project.")
+@click.option("--show-done", is_flag=True, help="Include done tasks in output.")
+@click.pass_context
+def tasks(ctx, n_shown, tasks_only, show_done):
+    n_shown = int(n_shown)
+    s = ctx.obj["SCHEDULE"]
+    pmap = ctx.obj["PMAP"]
+    if tasks_only:
+        if not n_shown:
+            n_shown = 10
+        ordered = s.get_n_highest_priority_tasks(n=n_shown + 1, include_done=show_done)
+        append_ellipses = True if len(ordered) > n_shown else False
+        ordered = ordered[:n_shown]
+
+        header_txt = f"Top {n_shown} tasks from all projects:"
+        print(header_txt + "\n" + "-"*len(header_txt))
+        for t in ordered:
+            print(f"\t{t.id} ({t.status}) [prio={t.priority}]: {t.name}")
+        if append_ellipses:
+            print("\t...")
+    else:
+        if not n_shown:
+            n_shown = 3
+        print_projects(pmap, show_n_tasks=n_shown)
+
+
 # dion task
-@cli.group(invoke_without_command=False)
+@cli.group(invoke_without_command=False, help="Commands for a single task.")
 @click.argument("task_id", type=click.STRING)
 @click.pass_context
 def task(ctx, task_id):
     ctx.obj["TASK"] = get_task_from_task_id(ctx, task_id)
 
+
 # dion task [task_id] work
-@task.command(name="work")
+@task.command(name="work", help="Work on a single task, manually. [Not recommended]")
 @click.pass_context
 def task_work(ctx):
     t = ctx.obj["TASK"]
@@ -359,7 +382,7 @@ def task_work(ctx):
 
 
 # dion task [task_id] done
-@task.command(name="done")
+@task.command(name="done", help="Complete a task.")
 @click.pass_context
 def task_done(ctx):
     t = ctx.obj["TASK"]
@@ -368,7 +391,7 @@ def task_done(ctx):
 
 
 # dion task [task_id] hold
-@task.command(name="hold")
+@task.command(name="hold", help="Put a task on hold (i.e., waiting on someone else).")
 @click.pass_context
 def task_hold(ctx):
     t = ctx.obj["TASK"]
@@ -377,7 +400,7 @@ def task_hold(ctx):
 
 
 # dion task [task_id] rename
-@task.command(name="rename")
+@task.command(name="rename", help="Rename a task.")
 @click.pass_context
 def task_hold(ctx):
     t = ctx.obj["TASK"]
@@ -388,7 +411,7 @@ def task_hold(ctx):
 
 
 # dion task [task_id] edit
-@task.command(name="edit")
+@task.command(name="edit", help="Edit a task's content.")
 @click.pass_context
 def task_edit(ctx):
     t = ctx.obj["TASK"]
@@ -397,7 +420,7 @@ def task_edit(ctx):
 
 
 # dion task [task_id] view
-@task.command(name="view")
+@task.command(name="view", help="View a task.")
 @click.pass_context
 def task_view(ctx):
     t = ctx.obj["TASK"]
@@ -405,7 +428,7 @@ def task_view(ctx):
 
 
 # dion task [task_id] prio
-@task.command(name="prio")
+@task.command(name="prio", help="Set a task's priority.")
 @click.argument("priority", type=click.INT)
 @click.pass_context
 def task_prio(ctx, priority):
@@ -418,7 +441,7 @@ def task_prio(ctx, priority):
 
 
 # dion task new
-@task.command(name="task")
+@task.command(name="new", help="Create a new task.")
 @click.pass_context
 def new_task(ctx):
     pmap = ctx.obj["PMAP"]
