@@ -8,7 +8,7 @@ from dionysus.constants import done_str, status_primitives, priority_primitives,
     task_extension, print_separator
 from dionysus.util import process_name, AttrDict
 from dionysus.exceptions import FileOverwriteError
-
+from dionysus.logic import order_task_collection
 
 class Project:
     def __init__(self, path: str, id: str):
@@ -111,9 +111,9 @@ class Project:
 
     def get_n_highest_priority_tasks(self, n=1) -> Union[List, None]:
         # return the highest priority task
-        ordered = order_task_collection(self.tasks, limit=1, include_done=False)
+        ordered = order_task_collection(self.tasks, limit=n, include_done=False)
         if ordered:
-            working_task = ordered[:n]
+            return ordered[:n]
         else:
             return None
 
@@ -124,61 +124,6 @@ def process_id(id: str) -> str:
     else:
         raise ValueError("Project Ids must be a length 1 string.")
 
-
-def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done: bool = False) -> List[Task]:
-    """
-
-    Order a task collection
-
-    1. deprioritize done
-    2. deprioritize hold
-    3. priority ordering
-    4. doing > todo
-    5. ordering based on last edited/most worked on OR random
-
-    Args:
-        task_collection:
-
-    Returns:
-
-    """
-
-    # most important is low index
-    if include_done:
-        done_ordered = sorted(task_collection.done, key=lambda t: t.priority)
-        ordered = done_ordered
-    else:
-        ordered = []
-
-    hold_ordered = sorted(task_collection.hold, key=lambda t: t.priority)
-    ordered = hold_ordered + ordered
-
-    todoing = task_collection.todo + task_collection.doing
-
-    # more advanced ordering for to-do + doing
-    todoing_by_priority = {priority: [] for priority in priority_primitives}
-    for t in todoing:
-        todoing_by_priority[t.priority].append(t)
-
-    # to-doing segregated by priority level, priority levels decreasing
-    todoing_by_priority = sorted([(p, tc) for p, tc in todoing_by_priority.items()], key=lambda x: x[0], reverse=True)
-
-    for _, tc in todoing_by_priority:
-        # doing has higher priority (lower index) than to-do within a given priority level
-        plevel_doing = [t for t in tc if t.doing]
-        plevel_todo = [t for t in tc if t.todo]
-
-        # todo: could add a rule for sorting based on time worked/last edited
-        # todo: for now, just randomly shuffles tasks with identical priority and identical todo or doing status
-        random.shuffle(plevel_doing)
-        random.shuffle(plevel_todo)
-        plevel_ordered = plevel_doing + plevel_todo
-        ordered = plevel_ordered + ordered
-
-    if limit:
-        return ordered[:limit]
-    else:
-        return ordered
 
 
 if __name__ == "__main__":

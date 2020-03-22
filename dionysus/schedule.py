@@ -1,8 +1,12 @@
 import os
 import json
+import datetime
+import itertools
 
 from dionysus.project import Project
 from dionysus.constants import schedule_fname, valid_project_ids, default_schedule
+from dionysus.logic import order_task_collection
+from dionysus.constants import status_primitives
 
 
 class Schedule:
@@ -46,7 +50,24 @@ class Schedule:
             project_map[p.id] = p
         return project_map
 
+    def get_n_highest_priority_tasks(self, n=1):
+        today = datetime.datetime.today().strftime("%A")
+        todays_project_ids = self.schedule[today]
+        pmap = self.get_project_map()
+        if todays_project_ids == "all":
+            todays_project_ids = list(pmap.keys())
+        todays_projects = [pmap[pid] for pid in todays_project_ids]
+        all_todays_tasks = {}
+        for sp in status_primitives:
+            all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
+        ordered = order_task_collection(all_todays_tasks, limit=n)
+
+
+
+
+
+
 
 if __name__ == "__main__":
-    s = Schedule("/home/x/dionysus/playground")
-    print(s.get_projects())
+    s = Schedule("/home/x/dionysus/dionysus/tmp_projset/")
+    print(s.work())

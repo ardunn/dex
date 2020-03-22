@@ -76,14 +76,12 @@ def write_path_as_current_root_path(path: str):
         f.write(path)
 
 
-def print_projects(pmap, list_tasks=3):
-    print("ID:  NAME")
-    print("---------\n")
+def print_projects(pmap, show_n_tasks=3):
     for pid, p in pmap.items():
-        print(f"{pid}: {p.name}")
-        if list_tasks:
-            print("\t------------------")
-            ordered_tasks = p.get_n_highest_priority_tasks(n=3)
+        print(f"ID: {pid}  |  {p.name}")
+        if show_n_tasks:
+            print("------------------")
+            ordered_tasks = p.get_n_highest_priority_tasks(n=show_n_tasks)
             if ordered_tasks:
                 for task in ordered_tasks:
                     print(f"\t{task.id}: {task.name}")
@@ -91,6 +89,7 @@ def print_projects(pmap, list_tasks=3):
                     print("\n")
             else:
                 print("No tasks.")
+
 
 
 @click.group(invoke_without_command=False)
@@ -115,7 +114,7 @@ def init(ctx, path):
 
 ### Root level commands ###
 
-
+# dion schedule
 @cli.command()
 @click.pass_context
 def schedule(ctx):
@@ -124,12 +123,33 @@ def schedule(ctx):
     print(f"Weekly schedule at {s.schedule_file} written.")
 
 
+# dion work
 @cli.command()
 @click.pass_context
 def work(ctx, path):
-    pass
+    checks_root_path_loc()
+    s = Schedule(path=get_current_root_path())
+    t = s.get_n_highest_priority_tasks(1)
+    print(f"Task {t.id}: {t.name}")
+    print("View this task?")
 
+    for i in range(3):
+        ans = input("(y/n)").lower()
+        if ans in ("y", "yes"):
+            t.view()
+            break
+        elif ans in ("n", "no"):
+            break
+        else:
+            print("Please enter `y` or `n`")
+    else:
+        print("No input recieved. Get to work!")
 
+    t.work()
+    print(f"You're now working on '{t.name}'")
+    print("Now get to work!")
+
+# dion projects
 @cli.command()
 @click.pass_context
 def projects(ctx):
@@ -137,13 +157,18 @@ def projects(ctx):
     s = Schedule(path=get_current_root_path())
     pmap = s.get_project_map()
     if s.get_projects():
-        print_projects(pmap, list_tasks=True)
+        print_projects(pmap, show_n_tasks=3)
     else:
         print("No projects. Use 'dion project new' to create a new project.")
 
 
-# def tasks():
-#     pass
+@cli.command()
+@click.pass_context
+def tasks(ctx):
+    checks_root_path_loc()
+    s = Schedule(path=get_current_root_path())
+    pmap = s.get_project_map()
+    print_projects(pmap, show_n_tasks=100)
 
 ### Project level commands ###
 
@@ -168,9 +193,15 @@ def project_view(ctx, pid):
     pmap = ctx.obj["PMAP"]
     if pid not in pmap.keys():
         print(f"Project ID {pid} invalid. Select from the following projects:")
-        print_projects(pmap, list_tasks=False)
+        print_projects(pmap, show_n_tasks=False)
 
 
+# dion project work [PID]
+@project.command(name="work")
+@click.argument("project_id", type=click.STRING)
+@
+
+# dion project new
 @project.command(name="new")
 @click.argument("project_name", type=click.STRING)
 @click.option("--no-init-notes", is_flag=True)
