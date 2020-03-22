@@ -3,11 +3,11 @@ import json
 import datetime
 import itertools
 
-from dionysus.project import Project
-from dionysus.constants import schedule_fname, valid_project_ids, default_schedule
-from dionysus.logic import order_task_collection
-from dionysus.constants import status_primitives
-from dionysus.util import AttrDict
+from dion.project import Project
+from dion.constants import schedule_fname, valid_project_ids, default_schedule
+from dion.logic import order_task_collection
+from dion.constants import status_primitives
+from dion.util import AttrDict
 
 
 class Schedule:
@@ -72,5 +72,5 @@ class Schedule:
 
 
 if __name__ == "__main__":
-    s = Schedule("/home/x/dionysus/dionysus/tmp_projset/")
+    s = Schedule("/home/x/dion/dion/tmp_projset/")
     print(s.work())

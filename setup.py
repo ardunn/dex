@@ -8,14 +8,14 @@ with open(os.path.join(module_dir, "requirements.txt"), "r") as f:
 
 long_description = \
     """
-    Dionysus, a productivity tool.
+    Dion (Dionysus), a productivity tool.
     """
 
 setup(
-    name='dionysus',
+    name='dion',
     version=str(version),
     description='A command line productivity tool.',
-    url='https://github.com/ardunn/dionysus',
+    url='https://github.com/ardunn/dion',
     author='Alex Dunn',
     author_email='denhaus@gmail.com',
     long_description=long_description,
@@ -25,7 +25,7 @@ setup(
         'Development Status :: 3 - Alpha',
     ],
     keywords='productivity',
-    test_suite='dionysus',
+    test_suite='dion',
     tests_require='tests',
     packages=find_packages(),
     # package_data={'rocketsled': ['defaults.yaml']},
@@ -34,6 +34,6 @@ setup(
     include_package_data=True,
     entry_points='''
         [console_scripts]
-        dion=dionysus.cmd:cli
+        dion=dion.cmd:cli
     ''',
 )

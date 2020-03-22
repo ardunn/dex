@@ -1,24 +1,24 @@
-# Dionysus
+# dion
 
-#### Dionysus is an ultra-minimal and opinionated productivity tool.
+#### dion is an ultra-minimal and opinionated productivity tool.
 It tells you what to work on and when. You can create new tasks, edit existing one, 
 or mark them as doing or done. Get more done in less time.
 
-![dionysus](./assets/dionysus.jpg)
+![dion](./assets/dion.jpg)
 
-#### Who is `dionysus` for?
+#### Who is `dion` for?
 Commmand-line-aholics. People who like to manage their tasks lists as simple
 files rather than online interfaces. Pretty much no one else.
 
 
 #### Tell me more...
-`dionysus` is built on a few core assumptions:
+`dion` is built on a few core assumptions:
 
 1. Choosing what to work on is hard, especially when you have many projects and tasks.
 2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks.
 3. Tasks have higher and lower priorities.
 
-Using these heuristics and your project schedule, `dionysus` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dionysus` works best when you define tasks which require approximately equal time.
+Using these heuristics and your project schedule, `dion` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dion` works best when you define tasks which require approximately equal time.
 
 
 
@@ -67,7 +67,7 @@ Example:
 
 ```
 
-#### `dionysus` is an interface for working with tasks in this format. 
+#### `dion` is an interface for working with tasks in this format. 
 
 
 Instructions and examples to come.

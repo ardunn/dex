@@ -1,9 +1,9 @@
 import random
 from typing import List
 
-from dionysus.util import AttrDict
-from dionysus.task import Task
-from dionysus.constants import priority_primitives
+from dion.util import AttrDict
+from dion.task import Task
+from dion.constants import priority_primitives
 
 
 def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done: bool = False) -> List[Task]:

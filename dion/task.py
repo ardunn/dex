@@ -3,9 +3,9 @@ import re
 import copy
 from typing import Iterable
 
-from dionysus.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv, done_str, todo_str, doing_str, hold_str
-from dionysus.exceptions import FileTypeError, StatusError, PriorityError, FileOverwriteError
-from dionysus.util import initiate_editor, process_name
+from dion.constants import priorities_pretty, statuses_pretty, task_extension, priority_primitives, status_primitives, all_delimiters, mdv, done_str, todo_str, doing_str, hold_str
+from dion.exceptions import FileTypeError, StatusError, PriorityError, FileOverwriteError
+from dion.util import initiate_editor, process_name
 
 
 class Task:
@@ -27,7 +27,7 @@ class Task:
         self._refresh()
 
     def __str__(self):
-        return f"<dionysus Task {self.id}: ({self.priority} {self.status}) - [{self.name}]>"
+        return f"<dion Task {self.id}: ({self.priority} {self.status}) - [{self.name}]>"
 
     def __repr__(self):
         return self.__str__()
@@ -182,11 +182,11 @@ def check_status(status: str) -> None:
 
 
 if __name__ == "__main__":
-    # t = Task("/home/x/dionysus/dionysus/tmp/{1}[todo] some cool task.md", id=1)
+    # t = Task("/home/x/dion/dion/tmp/{1}[todo] some cool task.md", id=1)
 
     t = Task.create_from_spec(
         id="b3",
-        path_prefix="/home/x/dionysus/dionysus/tmp",
+        path_prefix="/home/x/dion/dion/tmp",
         name="new spec created from something else2   ",
         priority=3,
         status="todo",

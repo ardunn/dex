@@ -1,7 +1,7 @@
 import os
 
-from dionysus.constants import editor, all_delimiters
-from dionysus.exceptions import FileCharacterError
+from dion.constants import editor, all_delimiters
+from dion.exceptions import FileCharacterError
 
 
 class AttrDict(dict):
@@ -22,7 +22,7 @@ def process_name(name: str) -> str:
 
     """
     if any([delim in name for delim in all_delimiters]):
-        raise FileCharacterError(f"The characters {all_delimiters} are not allowed in dionysus filenames.")
+        raise FileCharacterError(f"The characters {all_delimiters} are not allowed in dion filenames.")
     else:
         return name.strip()
 

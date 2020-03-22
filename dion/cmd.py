@@ -4,12 +4,12 @@ import shutil
 
 import click
 
-from dionysus.schedule import Schedule
-from dionysus.project import Project
-from dionysus.task import Task
-from dionysus.exceptions import RootPathError
-from dionysus.util import initiate_editor
-from dionysus.constants import valid_project_ids, priority_primitives, status_primitives, done_str, schedule_all_projects_key
+from dion.schedule import Schedule
+from dion.project import Project
+from dion.task import Task
+from dion.exceptions import RootPathError
+from dion.util import initiate_editor
+from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, schedule_all_projects_key
 
 '''
 # Top level commands

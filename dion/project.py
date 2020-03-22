@@ -4,12 +4,12 @@ import copy
 from typing import List, Union
 from collections import namedtuple
 
-from dionysus.task import Task
-from dionysus.constants import done_str, status_primitives, priority_primitives, notes_dir_str, tasks_dir_str, \
+from dion.task import Task
+from dion.constants import done_str, status_primitives, priority_primitives, notes_dir_str, tasks_dir_str, \
     task_extension, print_separator
-from dionysus.util import process_name, AttrDict
-from dionysus.exceptions import FileOverwriteError
-from dionysus.logic import order_task_collection
+from dion.util import process_name, AttrDict
+from dion.exceptions import FileOverwriteError
+from dion.logic import order_task_collection
 
 class Project:
     def __init__(self, path: str, id: str):
@@ -25,7 +25,7 @@ class Project:
 
     def __str__(self):
         n_tasks = len(self.tasks.all)
-        return f"<dionysus Project {self.id}: [{self.name}] ({n_tasks} tasks)>"
+        return f"<dion Project {self.id}: [{self.name}] ({n_tasks} tasks)>"
 
     def __repr__(self):
         return self.__str__()
@@ -140,13 +140,13 @@ if __name__ == "__main__":
     import pprint
 
     # p = Project.create_from_spec(
-    #     path_prefix="/home/x/dionysus/dionysus/tmp_projset",
+    #     path_prefix="/home/x/dion/dion/tmp_projset",
     #     id="a",
     #     name="proj1",
     #     init_notes=True
     # )
 
-    p = Project("/home/x/dionysus/playground/project1812", id="a")
+    p = Project("/home/x/dion/playground/project1812", id="a")
 
     # p.rename("proj2")
 

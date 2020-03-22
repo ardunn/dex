@@ -2,7 +2,7 @@ import os
 import shutil
 import unittest
 
-from dionysus.task import Task
+from dion.task import Task
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
 original_filedir = os.path.join(thisdir, "task/good/original")
