@@ -1,5 +1,6 @@
 import os
 import random
+import copy
 from typing import List, Union
 from collections import namedtuple
 
@@ -81,7 +82,11 @@ class Project:
     def create_new_task(self, name, priority, status, edit=True) -> Task:
         if name in [tn.name for tn in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
-        t = Task.create_from_spec("<null>", self.tasks_dir, name, priority, status, edit=edit)
+
+        all_task_numbers = [int(copy.deepcopy(t.id).remove(self.id)) for t in self.tasks]
+        new_task_number = max(all_task_numbers + 1)
+        new_task_id = f"{self.id}{new_task_number}"
+        t = Task.create_from_spec(new_task_id, self.tasks_dir, name, priority, status, edit=edit)
         self._refresh()
         return t
 

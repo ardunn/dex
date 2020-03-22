@@ -9,7 +9,7 @@ from dionysus.project import Project
 from dionysus.task import Task
 from dionysus.exceptions import RootPathError
 from dionysus.util import initiate_editor
-from dionysus.constants import valid_project_ids
+from dionysus.constants import valid_project_ids, priority_primitives, status_primitives
 
 '''
 # Top level commands
@@ -100,21 +100,25 @@ def print_projects(pmap, show_n_tasks=3):
                 print("No tasks.\n")
 
 
-def print_task_work_interface(task):
-    print(f"Task {task.id}: {task.name}")
-    print("View this task?")
-
+def ask_for_yn(prompt, action=None):
     for i in range(3):
-        ans = input("(y/n)").lower()
+        ans = input(f"{prompt} (y/n) ").lower()
         if ans in ("y", "yes"):
-            task.view()
-            break
+            if not isinstance(action, None):
+                action()
+            return True
         elif ans in ("n", "no"):
-            break
+            return False
         else:
             print("Please enter `y` or `n`")
     else:
         print("No input recieved. Get to work!")
+        click.Context.exit(1)
+
+
+def print_task_work_interface(task):
+    print(f"Task {task.id}: {task.name}")
+    ask_for_yn("View this task?", action=task.view)
     task.work()
     print(f"You're now working on '{task.name}'")
     print("Now get to work!")
@@ -398,14 +402,45 @@ def task_view(ctx, task_id):
 @click.argument("task_id", type=click.STRING)
 @click.argument("priority", type=click.INT)
 @click.pass_context
-def task_prio(ctx, task_id):
+def task_prio(ctx, task_id, priority):
     t = get_task_from_task_id(ctx, task_id)
-    t.set_priority()
+    if priority not in priority_primitives:
+        print(f"Priority is set according to an integer. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}.")
+        click.Context.exit(1)
+    t.set_priority(priority)
     print(f"Task {task_id}: '{t.name}' edited.")
 
 
+# dion task new
+#     ----> asks for project id
+#     ----> asks for task name
+#     ----> asks for priority
+#     ----> asks for status
+#     ----> asks to edit content, then does it if wanted
+@task.command(name="prio")
+@click.pass_context
+def task_prio(ctx):
+    pmap = ctx.obj["PMAP"]
 
-# view prio new
+    # select project
+    header_txt = "Select a project id from the following projects:"
+    print(header_txt + "\n" + "-"*len(header_txt))
+    print_projects(pmap, show_n_tasks=0)
+    project_id = input("Project ID: ")
+    print("\n")
+    check_project_id_exists(pmap, project_id)
+    project = pmap[project_id]
+
+    # enter task specifics
+    task_name = input("Enter a name for this task: ")
+    task_prio = input(f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): ")
+    task_status = status_primitives[0]
+    task_status = input(f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: ")
+    edit_content = ask_for_yn("Edit the task's content?", action=None)
+
+    # create new task
+    t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
+    print(f"Task {t.id}: '{t.name} created with priority {t.priority} and status {t.status}.")
 
 
 if __name__ == '__main__':
