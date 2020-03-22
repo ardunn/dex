@@ -1,5 +1,6 @@
 import os
 import copy
+import shutil
 
 import click
 
@@ -16,28 +17,29 @@ from dionysus.constants import valid_project_ids
 --------------------
 dion init [root path]                  # create a new schedule file and save the path somewhere
 dion schedule                         # edit the schedule file
-dion work                             # print and start work on the highest importance task, printing pid+tid and all info
+dion work                             # print and start work on the highest importance task, printing project_id+tid and all info
 dion projects                         # show all projects, ordered by sum of importances of tasks
 dion tasks                            # view ordered tasks across all projects
 
 
 # Project commands
 -------------------
-dion project work [pid]               # work on a task, only for this project
-dion project view [pid]               # view a projects tasks in order of importance
-dion project prio [pid]               # +/- priority of all tasks for a particular project
-dion project rename [pid]             # rename a project
-dion project new [name]               # make new project and return project id, then show all projec tids
+dion project work [project_id]               # work on a task, only for this project
+dion project view [project_id]               # view a projects tasks in order of importance
+dion project prio [project_id]               # +/- priority of all tasks for a particular project
+dion project rename [project_id]             # rename a project
+dion project new [name]                      # make new project and return project id, then show all project-ids
+dion project rm [project_id]                 # delete a project
 
 
 # Task commands
 --------------------
-dion task [pid+tid] work              # work on a specific task
-dion task [pid+tid]s done             # mark a task or tasks as done
-dion task [pid+tid] rename            # rename a task
-dion task [pid+tid] edit              # edit a task
-dion task [pid+tid] view              # view a task
-dion task [pid+tid]s prio             # set priorities of tasks
+dion task [project_id+tid] work              # work on a specific task
+dion task [project_id+tid]s done             # mark a task or tasks as done
+dion task [project_id+tid] rename            # rename a task
+dion task [project_id+tid] edit              # edit a task
+dion task [project_id+tid] view              # view a task
+dion task [project_id+tid]s prio             # set priorities of tasks
 dion task new                         # create a new task
     ----> asks for task name
     ----> asks for project name
@@ -45,7 +47,7 @@ dion task new                         # create a new task
     ----> asks for status
     ----> asks to edit content, then does it if wanted
 
-dion task [pid+tid]s set_status       # manually set status of tasks
+dion task [project_id+tid]s set_status       # manually set status of tasks
 '''
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
@@ -193,47 +195,49 @@ def project(ctx):
     ctx.obj["SCHEDULE"] = s
     ctx.obj["PMAP"] = pmap
 
-# dion project work [PID]
+# dion project work [project_id]
 @project.command(name="work")
 @click.argument("project_id", type=click.STRING)
 @click.pass_context
-def project_work(ctx, pid):
+def project_work(ctx, project_id):
     pmap = ctx.obj["PMAP"]
-    check_pid_in_projects(pmap, pid)
-    t = pmap[pid].get_n_highest_priority_tasks(n=1)[0]
+    check_pid_in_projects(pmap, project_id)
+    t = pmap[project_id].get_n_highest_priority_tasks(n=1)[0]
     print_task_work_interface(t)
 
 
-# dion project view [PID]
+# dion project view [project_id]
 @project.command(name="view")
 @click.argument("project_id", type=click.STRING)
 @click.pass_context
-def project_view(ctx, pid):
+def project_view(ctx, project_id):
     pmap = ctx.obj["PMAP"]
-    check_pid_in_projects(pmap, pid)
-    single_project_pmap = {pid: pmap[pid]}
+    check_pid_in_projects(pmap, project_id)
+    single_project_pmap = {project_id: pmap[project_id]}
     print_projects(single_project_pmap, show_n_tasks=100)
 
 
+# dion project prio [project_id]
 @project.command(name="prio")
 @click.argument("project_id", type=click.STRING)
 @click.argument("priority", type=click.INT)
 @click.pass_context
-def project_prio(ctx, pid, priority):
+def project_prio(ctx, project_id, priority):
     pmap = ctx.obj["PMAP"]
-    check_pid_in_projects(pmap, pid)
-    p = pmap[pid]
+    check_pid_in_projects(pmap, project_id)
+    p = pmap[project_id]
     p.set_task_priorities(priority)
     print(f"Priorities in project '{p.name}' all set to {priority}.")
 
 
+# dion project rename [project_id]
 @project.command(name="rename")
-@click.argument("project id", type=click.STRING)
+@click.argument("project_id", type=click.STRING)
 @click.argument("new_name", type=click.STRING)
 @click.pass_context
-def project_rename(ctx, pid, new_name):
+def project_rename(ctx, project_id, new_name):
     pmap = ctx.obj["PMAP"]
-    p = pmap[pid]
+    p = pmap[project_id]
     old_name = copy.deepcopy(p.name)
     p.rename(new_name)
     print(f"Project '{old_name}' renamed to '{p.name}.")
@@ -252,8 +256,22 @@ def project_new(ctx, project_name, no_init_notes):
         remaining_pids.remove(pid)
     new_pid = remaining_pids[0]
     print(f"DEBUG: no init notes is {no_init_notes}")
-    Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=not no_init_notes)
+    p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=not no_init_notes)
+    s = Schedule(get_current_root_path())
+    print(f"Project `{p.name}` added.")
+    print(f"All projects:")
+    print_projects(s.get_project_map(), show_n_tasks=0)
 
+
+@project.command(name="rm")
+@click.argument("project_id", type=click.STRING)
+@click.pass_context
+def project_rm(ctx, project_id):
+    pmap = ctx.obj["PMAP"]
+    p = pmap[project_id]
+    name = copy.deepcopy(p.name)
+    shutil.rmtree(p.path)
+    print(f"Project {p.name} removed.")
 
 
 if __name__ == '__main__':
