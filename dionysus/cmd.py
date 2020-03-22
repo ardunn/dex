@@ -389,7 +389,7 @@ def task_work(ctx):
 def task_done(ctx):
     t = ctx.obj["TASK"]
     t.complete()
-    print(f"Task {t.id} completed.")
+    print(f"Task {t.id}: '{t.name}' completed.")
 
 
 # dion task [task_id] hold
@@ -398,7 +398,7 @@ def task_done(ctx):
 def task_hold(ctx):
     t = ctx.obj["TASK"]
     t.put_on_hold()
-    print(f"Task {t.id} held until further notice.")
+    print(f"Task {t.id}: '{t.name}' held until further notice.")
 
 
 # dion task [task_id] rename
