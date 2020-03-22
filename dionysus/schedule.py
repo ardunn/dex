@@ -61,6 +61,7 @@ class Schedule:
         for sp in status_primitives:
             all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
         ordered = order_task_collection(all_todays_tasks, limit=n)
+        return ordered
 
 
 

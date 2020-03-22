@@ -17,7 +17,6 @@ from dionysus.constants import valid_project_ids
 dion init [root path]                  # create a new schedule file and save the path somewhere
 dion schedule                         # edit the schedule file
 dion work                             # print and start work on the highest importance task, printing pid+tid and all info
-
 dion projects                         # show all projects, ordered by sum of importances of tasks
 dion tasks                            # view ordered tasks across all projects
 
@@ -61,7 +60,7 @@ def checks_root_path_loc():
                 # print("debug: current root path exists!")
                 return None
     print("No current project. Use 'dion init' to create a new project.")
-    click.Context.exit(0)
+    click.Context.exit(1)
 
 
 # @checks_root_path_loc
@@ -90,6 +89,31 @@ def print_projects(pmap, show_n_tasks=3):
             else:
                 print("No tasks.")
 
+
+def print_task_work_interface(task):
+    print(f"Task {task.id}: {task.name}")
+    print("View this task?")
+
+    for i in range(3):
+        ans = input("(y/n)").lower()
+        if ans in ("y", "yes"):
+            task.view()
+            break
+        elif ans in ("n", "no"):
+            break
+        else:
+            print("Please enter `y` or `n`")
+    else:
+        print("No input recieved. Get to work!")
+    task.work()
+    print(f"You're now working on '{task.name}'")
+    print("Now get to work!")
+
+
+def check_pid_in_projects(pmap, pid):
+    if pid not in pmap.keys():
+        print(f"Project ID {pid} invalid. Select from the following projects:")
+        print_projects(pmap, show_n_tasks=0)
 
 
 @click.group(invoke_without_command=False)
@@ -129,25 +153,9 @@ def schedule(ctx):
 def work(ctx, path):
     checks_root_path_loc()
     s = Schedule(path=get_current_root_path())
-    t = s.get_n_highest_priority_tasks(1)
-    print(f"Task {t.id}: {t.name}")
-    print("View this task?")
+    t = s.get_n_highest_priority_tasks(1)[0]
+    print_task_work_interface(t)
 
-    for i in range(3):
-        ans = input("(y/n)").lower()
-        if ans in ("y", "yes"):
-            t.view()
-            break
-        elif ans in ("n", "no"):
-            break
-        else:
-            print("Please enter `y` or `n`")
-    else:
-        print("No input recieved. Get to work!")
-
-    t.work()
-    print(f"You're now working on '{t.name}'")
-    print("Now get to work!")
 
 # dion projects
 @cli.command()
@@ -162,6 +170,7 @@ def projects(ctx):
         print("No projects. Use 'dion project new' to create a new project.")
 
 
+# dion tasks
 @cli.command()
 @click.pass_context
 def tasks(ctx):
@@ -170,8 +179,8 @@ def tasks(ctx):
     pmap = s.get_project_map()
     print_projects(pmap, show_n_tasks=100)
 
-### Project level commands ###
 
+# Project level commands--------------------------
 
 # dion project
 # @cli.command()
@@ -184,22 +193,51 @@ def project(ctx):
     ctx.obj["SCHEDULE"] = s
     ctx.obj["PMAP"] = pmap
 
-
-# dion project view [PID]
-@project.command(name="view")
-@click.argument("project id", type=click.STRING)
-@click.pass_context
-def project_view(ctx, pid):
-    pmap = ctx.obj["PMAP"]
-    if pid not in pmap.keys():
-        print(f"Project ID {pid} invalid. Select from the following projects:")
-        print_projects(pmap, show_n_tasks=False)
-
-
 # dion project work [PID]
 @project.command(name="work")
 @click.argument("project_id", type=click.STRING)
-@
+@click.pass_context
+def project_work(ctx, pid):
+    pmap = ctx.obj["PMAP"]
+    check_pid_in_projects(pmap, pid)
+    t = pmap[pid].get_n_highest_priority_tasks(n=1)[0]
+    print_task_work_interface(t)
+
+
+# dion project view [PID]
+@project.command(name="view")
+@click.argument("project_id", type=click.STRING)
+@click.pass_context
+def project_view(ctx, pid):
+    pmap = ctx.obj["PMAP"]
+    check_pid_in_projects(pmap, pid)
+    single_project_pmap = {pid: pmap[pid]}
+    print_projects(single_project_pmap, show_n_tasks=100)
+
+
+@project.command(name="prio")
+@click.argument("project_id", type=click.STRING)
+@click.argument("priority", type=click.INT)
+@click.pass_context
+def project_prio(ctx, pid, priority):
+    pmap = ctx.obj["PMAP"]
+    check_pid_in_projects(pmap, pid)
+    p = pmap[pid]
+    p.set_task_priorities(priority)
+    print(f"Priorities in project '{p.name}' all set to {priority}.")
+
+
+@project.command(name="rename")
+@click.argument("project id", type=click.STRING)
+@click.argument("new_name", type=click.STRING)
+@click.pass_context
+def project_rename(ctx, pid, new_name):
+    pmap = ctx.obj["PMAP"]
+    p = pmap[pid]
+    old_name = copy.deepcopy(p.name)
+    p.rename(new_name)
+    print(f"Project '{old_name}' renamed to '{p.name}.")
+
 
 # dion project new
 @project.command(name="new")
