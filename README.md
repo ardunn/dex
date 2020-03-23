@@ -193,7 +193,7 @@ Task b4: 'Infiltrate mothership' created with priority 2 and status 'doing'.
 ```
 
 Change the status of an existing task
-```bash
+```
 $: dion task b4 done  # complete a task
 ```
 or
