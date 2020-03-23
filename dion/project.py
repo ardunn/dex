@@ -56,6 +56,9 @@ class Project:
         self.name = self.path.split("/")[-1]
         self.done_dir = os.path.join(self.path, done_str)  # ok if this doesn't exist
 
+        if not os.path.exists(self.done_dir):
+            os.mkdir(self.done_dir)
+
         notes_dir = os.path.join(self.path, notes_dir_str)
 
         if not os.path.exists(notes_dir):

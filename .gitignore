@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 dion/current_root.path
+dion/current_root.ignore
 
 playground/
 # Pycharm

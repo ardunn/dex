@@ -57,6 +57,7 @@ PROJECT_SUBCOMMAND_LIST = ["work", "view", "prio", "rename", "rm"]
 TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
+CURRENT_ROOT_IGNORE_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.ignore")
 PRIORITY_WARNING = f"Invalid integer priority. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}."
 STATUS_WARNING = f"Invalid status string. Choose from: {status_primitives}"
 style = Style()
@@ -87,6 +88,18 @@ def get_current_root_path():
 def write_path_as_current_root_path(path: str):
     with open(CURRENT_ROOT_PATH_LOC, "w") as f:
         f.write(path)
+
+
+def write_ignore(ignore):
+    with open(CURRENT_ROOT_IGNORE_LOC, "w") as f:
+        for i in ignore:
+            f.write(i + "\n")
+
+
+def get_current_ignore():
+    with open(CURRENT_ROOT_IGNORE_LOC, "r") as f:
+        i = f.readlines()
+    return [folder.replace("\n", "") for folder in i]
 
 
 def get_project_header_str(project):
@@ -201,7 +214,7 @@ def cli(ctx):
 
     if ctx.invoked_subcommand != "init":
         checks_root_path_loc()
-        s = Schedule(path=get_current_root_path())
+        s = Schedule(path=get_current_root_path(), ignore=get_current_ignore())
         pmap = s.get_project_map()
         ctx.obj["SCHEDULE"] = s
         ctx.obj["PMAP"] = pmap
@@ -211,10 +224,14 @@ def cli(ctx):
 # dion init
 @cli.command(help="Initialize a new set of projects. You can only have one active.")
 @click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
-def init(path):
+@click.option("--ignore", "-i", multiple=True)
+def init(path, ignore):
+    if not ignore:
+        ignore = tuple()
     descriptor = "existing" if os.path.exists(path) else "new"
-    s = Schedule(path=path)
+    s = Schedule(path=path, ignore=ignore)
     write_path_as_current_root_path(s.path)
+    write_ignore(ignore)
     print(f"{descriptor.capitalize()} schedule initialized in path: {path}")
 
 

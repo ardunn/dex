@@ -11,7 +11,7 @@ from dion.util import AttrDict
 
 
 class Schedule:
-    def __init__(self, path):
+    def __init__(self, path, ignore=None):
         """
         Args:
             path: The path of the root directory containing all projects
@@ -20,6 +20,7 @@ class Schedule:
         if not os.path.exists(path):
             os.mkdir(path)
         self.path = path
+        self.ignore = ignore
 
         schedule_file = os.path.join(self.path, schedule_fname)
         if not os.path.exists(schedule_file):
@@ -38,7 +39,8 @@ class Schedule:
         for folder in os.listdir(self.path):
             full_dirpath = os.path.join(self.path, folder)
             if os.path.isdir(full_dirpath):
-                folders.append(full_dirpath)
+                if folder not in self.ignore:
+                    folders.append(full_dirpath)
         projects = []
         for i, folder in enumerate(folders):
             pid = valid_project_ids[i]
