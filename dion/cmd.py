@@ -5,6 +5,8 @@ import datetime
 
 import click
 import treelib
+import seaborn
+import matplotlib.pyplot as plt
 
 from dion.schedule import Schedule
 from dion.project import Project
@@ -226,6 +228,41 @@ def work(ctx, randomize):
         print_task_work_interface(tasks[0])
     else:
         print(style.format(ERROR_COLOR, f"No tasks found for any project in schedule {s.path}."))
+
+
+@cli.command(help="Get info about your projects.")
+@click.option("--visualize", "-v", is_flag=True, help="Make a graph of current tasks.")
+@click.pass_context
+def info(ctx, visualize):
+    s = ctx.obj["SCHEDULE"]
+    print(f"The current dion working directory is {s.path}")
+    print(f"There are currently {len(s.get_projects())} projects.")
+    print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=False))} active tasks.")
+    print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=True))} total tasks, including done.")
+
+    if visualize:
+        projects = s.get_projects()
+        n_tasks_w_status = {sp: 0 for sp in status_primitives}
+        n_tasks_w_priority = {pp: 0 for pp in priority_primitives}
+        for p in projects:
+            tasks = p.tasks
+            for sp in status_primitives:
+                n_tasks_w_status[sp] += len(tasks[sp])
+            for pp in priority_primitives:
+                n_tasks_w_priority[pp] += len([t for t in tasks.all if t.priority == pp and t.status != done_str])
+
+        seaborn.set_style("darkgrid")
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+        ax_status, ax_prio = axes
+
+        seaborn.barplot([f"priority {pp}" for pp in priority_primitives], [n_tasks_w_priority[pp] for pp in priority_primitives], ax=ax_prio, palette=seaborn.color_palette("Blues_r", len(priority_primitives)))
+        ax_prio.set_title("Current active (not done) tasks by priority")
+        seaborn.barplot(list(status_primitives), [n_tasks_w_status[sp] for sp in status_primitives], ax=ax_status, palette=seaborn.color_palette("Reds_r", len(status_primitives)))
+        ax_status.set_title("All tasks by status")
+
+        fig.tight_layout()
+        plt.show()
+
 
 
 # Schedule level commands ##############################################################################################

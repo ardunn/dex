@@ -9,8 +9,12 @@ from click.testing import CliRunner
 import dion.cmd as dioncli
 from dion.constants import schedule_fname, priority_primitives, status_primitives
 
+
 thisdir = os.path.abspath(os.path.dirname(__file__))
-test_projset_path = os.path.join(thisdir, "test_sched")
+test_projset_new_path = os.path.join(thisdir, "test_sched")
+reference_projset_path = os.path.join(thisdir, "../../assets/reference_schedule")
+test_projset_ref_path = os.path.join(thisdir, "test_sched_refd")
+
 
 class SimulatedInput:
     """
@@ -26,11 +30,11 @@ class SimulatedInput:
             raise Exception("No more input")
 
 
-
 class TestTask(unittest.TestCase):
 
     def setUp(self):
         self.runner = CliRunner()
+        shutil.copytree(reference_projset_path, test_projset_ref_path)
 
     #
     # @classmethod
@@ -39,18 +43,18 @@ class TestTask(unittest.TestCase):
 
     def test_new(self):
         # Test init a new project set
-        result = self.runner.invoke(dioncli.init, test_projset_path)
+        result = self.runner.invoke(dioncli.cli, f"init {test_projset_new_path}")
         self.assertEqual(result.exit_code, 0)
-        self.assertTrue(os.path.exists(os.path.join(test_projset_path, schedule_fname)))
+        self.assertTrue(os.path.exists(os.path.join(test_projset_new_path, schedule_fname)))
 
         # Test making a new project
         for i, syntax in enumerate(["project", "project new"]):
             project_terms = [f"{i}{term}" for term in ["p", "project", "proje-name", "proj1_  82n!@#$%U&*(-=+"]]
-            for name in enumerate(project_terms):
-                dioncli.input = lambda x: name
+            for name in project_terms:
+                dioncli.input = SimulatedInput(name)
                 result = self.runner.invoke(dioncli.cli, syntax, obj={})
                 self.assertEqual(result.exit_code, 0)
-                new_project_path = os.path.join(test_projset_path, name)
+                new_project_path = os.path.join(test_projset_new_path, name)
                 self.assertTrue(os.path.exists(new_project_path))
                 self.assertTrue(Path(new_project_path).is_dir)
 
@@ -65,16 +69,20 @@ class TestTask(unittest.TestCase):
                             result = self.runner.invoke(dioncli.cli, syntax, obj={})
                             self.assertEqual(result.exit_code, 0)
 
-
     def test_schedule(self):
+        self.runner.invoke(dioncli.cli, f"init {test_projset_ref_path}")
+        result = self.runner.invoke(dioncli.cli, "schedule")
+        self.assertEqual(result.exit_code, 0)
+
+        result = self.runner
 
     def tearDown(self) -> None:
         dioncli.input = input
+        for projset_path in [test_projset_new_path, test_projset_ref_path]:
+            if os.path.exists(projset_path):
+                shutil.rmtree(projset_path)
 
-    # @classmethod
-    # def tearDownClass(cls) -> None:
-    #     shutil.rmtree(test_projset_path)
-
+#
 
 def print_exc_info(result):
     print(result.exit_code)

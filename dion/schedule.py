@@ -16,6 +16,7 @@ class Schedule:
         Args:
             path: The path of the root directory containing all projects
         """
+        path = os.path.abspath(path)
         if not os.path.exists(path):
             os.mkdir(path)
         self.path = path
