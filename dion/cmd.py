@@ -182,6 +182,12 @@ def check_task_id_exists(project, tid):
         click.Context.exit(1)
 
 
+def check_input_not_empty(input_str):
+    if input_str is None or not input_str.strip():
+        print(style.format(ERROR_COLOR, "Empty or space-only names not allowed."))
+        click.Context.exit(1)
+
+
 # Global context level commands ########################################################################################
 # dion
 @click.group(invoke_without_command=False)
@@ -284,6 +290,7 @@ def project(ctx, project_id):
         # new project
         if ctx.invoked_subcommand is None and project_id in [None, "new"]:
             project_name = input("Enter new project name: ")
+            check_input_not_empty(project_name)
             current_pids = ctx.obj["PMAP"].keys()
             remaining_pids = copy.deepcopy(valid_project_ids)
             s = ctx.obj["SCHEDULE"]
@@ -319,7 +326,7 @@ def project_work(ctx):
 @project.command(name="view", help="View all tasks for a single project.")
 @click.option("--n-shown", "-n", default=20, help="Number of tasks to show.", type=click.INT)
 @click.option("--by-status", is_flag=True, help="Organize tasks by status.")
-@click.option("--show-done", is_flag=True, help="Include done tasks in output.")
+@click.option("--show-done", '-d', is_flag=True, help="Include done tasks in output.")
 @click.pass_context
 def project_view(ctx, n_shown, by_status, show_done):
     if n_shown is not None:
@@ -348,6 +355,7 @@ def project_rename(ctx):
     p = ctx.obj["PROJECT"]
     old_name = copy.deepcopy(p.name)
     new_name = input("New project name: ")
+    check_input_not_empty(new_name)
     p.rename(new_name)
     print(f"Project '{old_name}' renamed to '{p.name}.")
 
@@ -368,7 +376,7 @@ def project_rm(ctx):
 @cli.command(help="List all (or just some) tasks, ordered by importance.")
 @click.option("--n-shown", "-n", help="Number of tasks shown per project. --tasks-only flattens list.", type=click.INT)
 @click.option("--by-project", '-p', is_flag=True, help="Organize tasks by project.")
-@click.option("--show-done", is_flag=True, help="Include done tasks in output.")
+@click.option("--show-done", '-d', is_flag=True, help="Include done tasks in output.")
 @click.pass_context
 def tasks(ctx, n_shown, by_project, show_done):
     if n_shown is not None:
@@ -378,7 +386,7 @@ def tasks(ctx, n_shown, by_project, show_done):
     if by_project:
         if n_shown is None:
             n_shown = 3
-        print_projects(pmap, show_n_tasks=n_shown)
+        print_projects(pmap, show_n_tasks=n_shown, show_done=show_done)
     else:
         if n_shown is None:
             n_shown = 10
@@ -386,21 +394,24 @@ def tasks(ctx, n_shown, by_project, show_done):
         append_ellipses = True if len(ordered) > n_shown else False
         ordered = ordered[:n_shown]
 
-        tree = treelib.Tree()
-        header_txt = f"Top {n_shown} tasks from all {len(list(ctx.obj['PMAP'].keys()))} projects:"
-        tree.create_node(style.format("u", header_txt), "header")
-        for i, t in enumerate(ordered):
-            if i < 3:
-                color = "c"
-            elif 8 > i >= 3:
-                color = "y"
-            else:
-                color = "r"
-            task_txt = f"{t.id} ({t.status}) [prio={t.priority}]: {t.name}"
-            tree.create_node(style.format(color, task_txt), i, parent="header")
-        if append_ellipses:
-            tree.create_node("...", i + 1, parent="header")
-        tree.show(key=lambda node: node.identifier)
+        if ordered:
+            tree = treelib.Tree()
+            header_txt = f"Top {n_shown} tasks from all {len(list(ctx.obj['PMAP'].keys()))} projects:"
+            tree.create_node(style.format("u", header_txt), "header")
+            for i, t in enumerate(ordered):
+                if i < 3:
+                    color = "c"
+                elif 8 > i >= 3:
+                    color = "y"
+                else:
+                    color = "r"
+                task_txt = f"{t.id} ({t.status}) [prio={t.priority}]: {t.name}"
+                tree.create_node(style.format(color, task_txt), i, parent="header")
+            if append_ellipses:
+                tree.create_node("...", i + 1, parent="header")
+            tree.show(key=lambda node: node.identifier)
+        else:
+            print("No tasks! Make one with 'dion task new' or make a new project with 'dion project new'.")
 
 
 # dion task
@@ -423,11 +434,13 @@ def task(ctx, task_id):
             print(header_txt + "\n" + "-" * len(header_txt))
             print_projects(pmap, show_n_tasks=0)
             project_id = input("Project ID: ")
+            check_input_not_empty(project_id)
             check_project_id_exists(pmap, project_id)
             project = pmap[project_id]
 
             # enter task specifics
             task_name = input("Enter a name for this task: ")
+            check_input_not_empty(task_name)
             task_prio = int(input(
                 f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): "))
             if task_prio not in priority_primitives:
@@ -499,6 +512,7 @@ def task_hold(ctx):
     t = ctx.obj["TASK"]
     old_name = copy.deepcopy(t.name)
     new_name = input("New name: ")
+    check_input_not_empty(new_name)
     t.rename(new_name)
     print(f"Task {t.id} renamed from '{old_name}' to '{t.name}'.")
 
