@@ -6,7 +6,7 @@ It tells you what to work on and when. You can also create, edit, and view tasks
 ![dion](./assets/dionysus.jpg)
 ###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
 
-### Is `dion` for me?
+# Is `dion` for me?
 Take this quiz.
 
 1. Are you tired of trying many "productivity" tools, only to find you spend more time organizing your tasks than you do completing them?
@@ -18,7 +18,7 @@ Take this quiz.
 If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherwise, move on.
 
 
-### Highlights
+# Highlights
 ##### View tasks across all projects, ordered intelligently by importance
 ![dion](./assets/example_tasks.png)
 
@@ -44,17 +44,37 @@ If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherw
 ![dion](./assets/example_tree.png)
 
 
-### Tell me more...
-`dion` is built on a few core assumptions:
+## The System
+#### Tasks
+
+Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
+
+Tasks have both a *status* (todo, doing, on hold, done) and a priority (1-3, lower is more important).
+
+#### Projects
+
+Projects are long-standing collections of tasks. Projects are folders. Besides containing the task markdown files, the project can contain whatever you want (e.g., dedicated notes folder, code subfolders, etc.). I just have a notes subfolder but it can be whatever you want.
+
+Using these heuristics and your project schedule, `dion` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dion` works best when you define tasks which require approximately equal time.
+
+#### Schedule
+
+A schedule is your entire set of projects. Your schedule is defined weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Your schedule is defined in a single json file in a folder containing your dion project folders.
+
+
+#### Work
+
+`dion`'s system for choosing work tasks is built on a few core assumptions:
 
 1. Choosing what to work on is hard, especially when you have many projects and tasks.
 2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks.
 3. Tasks have higher and lower priorities.
 
-Using these heuristics and your project schedule, `dion` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dion` works best when you define tasks which require approximately equal time.
+Based on your schedule, dion chooses the most important task
 
 
-### Installation
+
+# Installation
 For now, clone the repo and install via pip:
 ```bash
 $: git clone https://github.com/ardunn/dion
