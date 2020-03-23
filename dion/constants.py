@@ -1,5 +1,7 @@
-import mdv
+import os
 import string
+
+import mdv
 
 mdv.term_columns = 60
 
@@ -36,3 +38,7 @@ default_schedule = {
 }
 
 valid_project_ids = list(string.ascii_lowercase)
+
+thisdir = os.path.abspath(os.path.dirname(__file__))
+reference_projset_path = os.path.join(thisdir, "../assets/reference_schedule")
+

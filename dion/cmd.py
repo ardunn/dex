@@ -12,14 +12,15 @@ from dion.schedule import Schedule
 from dion.project import Project
 from dion.util import initiate_editor, Style
 from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, hold_str, \
-    schedule_all_projects_key
+    schedule_all_projects_key, reference_projset_path
 
 '''
 # Top level commands
 --------------------
 dion init [root path]                 # create a new schedule file and save the path somewhere
 dion work                             # print and start work on the highest importance task, printing project_id+tid and all info
-
+dion info                             # output some info about the current projects
+dion example                          # create an example directory and set the current project to it
 
 # Schedule commands
 -------------------
@@ -263,6 +264,15 @@ def info(ctx, visualize):
         fig.tight_layout()
         plt.show()
 
+
+# dion example [root path]
+@cli.command(help="Get info about your projects. Enter a new folder path for the project directory!")
+@click.argument("path", type=click.Path(file_okay=False, dir_okay=False))
+def example(path):
+    if os.path.exists(path):
+        print(f"Path {path} exists. Choose a new path.")
+    shutil.copytree(reference_projset_path, path)
+    print(f"New example created at {path}. Use 'dion init {path}' to initialize it and start work!")
 
 
 # Schedule level commands ##############################################################################################

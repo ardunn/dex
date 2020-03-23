@@ -7,12 +7,11 @@ from pathlib import Path
 from click.testing import CliRunner
 
 import dion.cmd as dioncli
-from dion.constants import schedule_fname, priority_primitives, status_primitives
+from dion.constants import schedule_fname, priority_primitives, status_primitives, reference_projset_path
 
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
 test_projset_new_path = os.path.join(thisdir, "test_sched")
-reference_projset_path = os.path.join(thisdir, "../../assets/reference_schedule")
 test_projset_ref_path = os.path.join(thisdir, "test_sched_refd")
 
 
