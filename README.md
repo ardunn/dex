@@ -4,7 +4,7 @@
 It tells you what to work on and when. You can create new tasks, edit existing one, 
 or mark them as doing or done. Get more done in less time.
 
-![dion](./assets/dion.jpg)
+![dion](./assets/dionysus.jpg)
 
 #### Who is `dion` for?
 Commmand-line-aholics. People who like to manage their tasks lists as simple

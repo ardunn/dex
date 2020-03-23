@@ -1,12 +1,14 @@
 import os
 import shutil
 import unittest
+from traceback import print_tb
 
-from dion.task import Task
+from click.testing import CliRunner
+
+import dion.cmd as dioncli
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
-original_filedir = os.path.join(thisdir, "task/good/original")
-edited_filedir = os.path.join(thisdir, "task/good/edited")
+test_schedule_dir = os.path.join(thisdir, "test_sched")
 
 
 class TestTask(unittest.TestCase):
@@ -15,31 +17,38 @@ class TestTask(unittest.TestCase):
     #     self.
     #     pass
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        if os.path.exists(edited_filedir):
-            shutil.rmtree(edited_filedir)
-        shutil.copytree(original_filedir, edited_filedir)
 
-    def test_initialize(self):
-        for fp in os.listdir(edited_filedir):
-            full_path = os.path.join(edited_filedir, fp)
-            print("-------")
-            print(full_path)
-            print("-------")
-            t = Task(full_path, 0)
-            print(t.status)
-            print(t.name)
-            print(t.prefix_path)
-            print(t.id)
-            print(t.priority)
-            print(t.content)
-            t.view()
-            print("\n\n\n")
+    #
+    # @classmethod
+    # def tearDownClass(cls) -> None:
+    #     shutil.rmtree(edited_filedir)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        shutil.rmtree(edited_filedir)
+    def test_init(self):
+        runner = CliRunner()
+        result = runner.invoke(dioncli.init, test_schedule_dir)
+        print(result.exit_code)
+
+
+    def test_new_project(self):
+        print("durr")
+        runner = CliRunner()
+        dioncli.input = lambda x: 'some_input'
+        result = runner.invoke(dioncli.cli, "project new", obj={})
+        print(result.exit_code)
+        tb_tuple = result.exc_info
+        print([type(ei) for ei in tb_tuple ])
+
+        print_tb(tb_tuple[-1])
+        print(tb_tuple[0])
+        print(tb_tuple[1])
+        print(result.exception)
+
+        print(result.stdout)
+
+
+
+    def tearDown(self) -> None:
+        dioncli.input = input
 
 
 if __name__ == "__main__":
