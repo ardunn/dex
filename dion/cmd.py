@@ -290,7 +290,7 @@ def project(ctx, project_id):
             for pid in current_pids:
                 remaining_pids.remove(pid)
             new_pid = remaining_pids[0]
-            p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=False)
+            p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=True)
             s = Schedule(get_current_root_path())
             print(f"Project `{p.name}` added.")
             print_projects(s.get_project_map(), show_n_tasks=0)

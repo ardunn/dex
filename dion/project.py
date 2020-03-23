@@ -38,6 +38,8 @@ class Project:
         dest_dir = os.path.join(path_prefix, name)
         if os.path.exists(dest_dir):
             raise FileOverwriteError(f"Project \'{name}\' already exists: \'{dest_dir}\'")
+        else:
+            os.mkdir(dest_dir)
 
         done_dir = os.path.join(dest_dir, done_str)
         if not os.path.exists(done_dir):
