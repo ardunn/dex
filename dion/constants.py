@@ -17,7 +17,6 @@ hold_str = "hold"
 status_primitives = (todo_str, doing_str, hold_str, done_str)
 statuses_pretty = tuple([f"{lsd}{status}{rsd}" for status in status_primitives])
 
-tasks_dir_str = "tasks"
 notes_dir_str = "notes"
 
 all_delimiters = (lpd, rpd, lsd, rsd, "/")

@@ -15,7 +15,7 @@ def order_task_collection(task_collection: AttrDict, limit: int = 0, include_don
     2. deprioritize hold
     3. priority ordering
     4. doing > todo
-    5. ordering based on last edited/most worked on OR random
+    5. ordering based on last edited
 
     Args:
         task_collection:
@@ -49,10 +49,9 @@ def order_task_collection(task_collection: AttrDict, limit: int = 0, include_don
         plevel_doing = [t for t in tc if t.doing]
         plevel_todo = [t for t in tc if t.todo]
 
-        # todo: could add a rule for sorting based on time worked/last edited
-        # todo: for now, just randomly shuffles tasks with identical priority and identical todo or doing status
-        random.shuffle(plevel_doing)
-        random.shuffle(plevel_todo)
+        # oldest modified files are prioritized
+        plevel_doing.sort(key=lambda t: t.modification_time)
+        plevel_todo.sort(key=lambda t: t.modification_time)
         plevel_ordered = plevel_doing + plevel_todo
         ordered = plevel_ordered + ordered
 
@@ -60,3 +59,4 @@ def order_task_collection(task_collection: AttrDict, limit: int = 0, include_don
         return ordered[:limit]
     else:
         return ordered
+

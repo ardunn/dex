@@ -5,11 +5,12 @@ from typing import List, Union
 from collections import namedtuple
 
 from dion.task import Task
-from dion.constants import done_str, status_primitives, priority_primitives, notes_dir_str, tasks_dir_str, \
+from dion.constants import done_str, status_primitives, priority_primitives, notes_dir_str, \
     task_extension, print_separator
 from dion.util import process_name, AttrDict
 from dion.exceptions import FileOverwriteError
 from dion.logic import order_task_collection
+
 
 class Project:
     def __init__(self, path: str, id: str):
@@ -18,7 +19,6 @@ class Project:
 
         self.name = None
         self.prefix_path = None
-        self.tasks_dir = None
         self.notes_dir = None
         self.done_dir = None
         self._refresh()
@@ -38,11 +38,8 @@ class Project:
         dest_dir = os.path.join(path_prefix, name)
         if os.path.exists(dest_dir):
             raise FileOverwriteError(f"Project \'{name}\' already exists: \'{dest_dir}\'")
-        else:
-            tasks_dir = os.path.join(dest_dir, tasks_dir_str)
-            os.makedirs(tasks_dir)
 
-        done_dir = os.path.join(tasks_dir, done_str)
+        done_dir = os.path.join(dest_dir, done_str)
         if not os.path.exists(done_dir):
             os.mkdir(done_dir)
         if init_notes:
@@ -55,17 +52,13 @@ class Project:
     def _refresh(self) -> None:
         self.prefix_path = os.path.dirname(self.path)
         self.name = self.path.split("/")[-1]
-        self.tasks_dir = os.path.join(self.path, tasks_dir_str)  # must exist
-        self.done_dir = os.path.join(self.tasks_dir, done_str)  # ok if this doesn't exist
+        self.done_dir = os.path.join(self.path, done_str)  # ok if this doesn't exist
 
         notes_dir = os.path.join(self.path, notes_dir_str)
 
         if not os.path.exists(notes_dir):
             notes_dir = None
         self.notes_dir = notes_dir
-
-        if not os.path.exists(self.tasks_dir):
-            os.mkdir(self.tasks_dir)
 
     def rename(self, new_name) -> None:
         new_name = process_name(new_name)
@@ -87,7 +80,7 @@ class Project:
         max_task_numbers = max(all_task_numbers) if all_task_numbers else 0
         new_task_number = max_task_numbers + 1
         new_task_id = f"{self.id}{new_task_number}"
-        t = Task.create_from_spec(new_task_id, self.tasks_dir, name, priority, status, edit=edit)
+        t = Task.create_from_spec(new_task_id, self.path, name, priority, status, edit=edit)
         self._refresh()
         return t
 
@@ -103,7 +96,7 @@ class Project:
         task_dict["all"] = []
         task_collection = AttrDict(task_dict)
         unique_id = 0
-        for container_dir in [self.done_dir, self.tasks_dir]:
+        for container_dir in [self.done_dir, self.path]:
             for f in os.listdir(container_dir):
                 fp = os.path.join(container_dir, f)
                 if os.path.exists(fp):

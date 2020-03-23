@@ -69,7 +69,7 @@ def checks_root_path_loc():
             if os.path.exists(path):
                 # print("debug: current root path exists!")
                 return None
-    print("No current project. Use 'dion init' to create a new project.")
+    print("No current projects. Use 'dion init' to start your set of projects or move to a new one.")
     click.Context.exit(1)
 
 
@@ -188,11 +188,13 @@ def check_task_id_exists(project, tid):
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
-    checks_root_path_loc()
-    s = Schedule(path=get_current_root_path())
-    pmap = s.get_project_map()
-    ctx.obj["SCHEDULE"] = s
-    ctx.obj["PMAP"] = pmap
+
+    if ctx.invoked_subcommand != "init":
+        checks_root_path_loc()
+        s = Schedule(path=get_current_root_path())
+        pmap = s.get_project_map()
+        ctx.obj["SCHEDULE"] = s
+        ctx.obj["PMAP"] = pmap
 
 
 # Root level commands ##################################################################################################
@@ -268,7 +270,8 @@ def projects(ctx):
 
 1
 # dion project
-@cli.group(invoke_without_command=True, help="Command a single project (do 'dion project' w/ no args for new project).")
+# dion project new
+@cli.group(invoke_without_command=True, help="Command a single project (do 'dion project' or 'dion project new' w/ no args for new project).")
 @click.argument("project_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def project(ctx, project_id):
@@ -279,7 +282,7 @@ def project(ctx, project_id):
         click.Context.exit(1)
     else:
         # new project
-        if ctx.invoked_subcommand is None and project_id is None:
+        if ctx.invoked_subcommand is None and project_id in [None, "new"]:
             project_name = input("Enter new project name: ")
             current_pids = ctx.obj["PMAP"].keys()
             remaining_pids = copy.deepcopy(valid_project_ids)
@@ -384,7 +387,7 @@ def tasks(ctx, n_shown, by_project, show_done):
         ordered = ordered[:n_shown]
 
         tree = treelib.Tree()
-        header_txt = f"Top {n_shown} tasks from all projects:"
+        header_txt = f"Top {n_shown} tasks from all {len(list(ctx.obj['PMAP'].keys()))} projects:"
         tree.create_node(style.format("u", header_txt), "header")
         for i, t in enumerate(ordered):
             if i < 3:
@@ -401,7 +404,8 @@ def tasks(ctx, n_shown, by_project, show_done):
 
 
 # dion task
-@cli.group(invoke_without_command=True, help="Commands for a single task (do 'dion task' w/ on args for new task).")
+# dion task new
+@cli.group(invoke_without_command=True, help="Commands for a single task (do 'dion task' or 'dion task new' w/ on args for new task).")
 @click.argument("task_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def task(ctx, task_id):
@@ -411,7 +415,7 @@ def task(ctx, task_id):
         print(style.format(ERROR_COLOR, f"To access command '{task_id}' use 'dion task [PROJECT_ID] '{task_id}'."))
         click.Context.exit(1)
     else:
-        if ctx.invoked_subcommand is None and task_id is None:
+        if ctx.invoked_subcommand is None and task_id in [None, "new"]:
             pmap = ctx.obj["PMAP"]
 
             # select project

@@ -166,6 +166,10 @@ class Task:
     def todo(self):
         return self.status == todo_str
 
+    @property
+    def modification_time(self):
+        return os.path.getmtime(self.path)
+
 
 def qualifier_converter(to_list, from_list, key) -> Iterable:
     return to_list[from_list.index(key)]
