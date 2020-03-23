@@ -1,6 +1,7 @@
 import os
 import copy
 import shutil
+import datetime
 
 import click
 import treelib
@@ -8,7 +9,8 @@ import treelib
 from dion.schedule import Schedule
 from dion.project import Project
 from dion.util import initiate_editor, Style
-from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, hold_str, schedule_all_projects_key
+from dion.constants import valid_project_ids, priority_primitives, status_primitives, done_str, hold_str, \
+    schedule_all_projects_key
 
 '''
 # Top level commands
@@ -25,8 +27,8 @@ dion schedule edit                     # edit the schedule file
 
 # Project commands
 -------------------
+dion project                                 # make a new project
 dion projects                                # show all projects, ordered by sum of importances of tasks
-dion project new                             # make new project and return project id, then show all project-ids
 dion project [project_id] work               # work on a task, only for this project
 dion project [project_id] view               # view a projects tasks in order of importance
 dion project [project_id] prio               # +/- priority of all tasks for a particular project
@@ -36,8 +38,8 @@ dion project [project_id] rm                 # delete a project
 
 # Task commands
 --------------------
+dion task                              # make a new task
 dion tasks                             # view ordered tasks across all projects
-dion task new                          # make a new task
 dion task [task_id] work               # work on a specific task
 dion task [task_id] done               # mark a task as done
 dion task [task_id] hold               # hold a task
@@ -47,12 +49,17 @@ dion task [task_id] view               # view a task
 dion task [task_id] prio               # set priorities of task
 
 '''
+PROJECT_SUBCOMMAND_LIST = ["work", "view", "prio", "rename", "rm"]
+TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
 
 CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
 PRIORITY_WARNING = f"Invalid integer priority. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}."
 STATUS_WARNING = f"Invalid status string. Choose from: {status_primitives}"
 style = Style()
 status_colormap = {"todo": "b", "doing": "y", "hold": "m", "done": "g"}
+SUCCESS_COLOR = "c"
+ERROR_COLOR = "r"
+
 
 def checks_root_path_loc():
     if os.path.exists(CURRENT_ROOT_PATH_LOC):
@@ -88,21 +95,26 @@ def get_project_header_str(project):
 
 
 def print_projects(pmap, show_n_tasks=3, show_done=False):
+    tree = treelib.Tree()
+    tree.create_node("All projects", "root")
+    i = 0
     for p in pmap.values():
-        tree = treelib.Tree()
         id_str = get_project_header_str(p)
-        tree.create_node(id_str, "header")
+        tree.create_node(id_str, p.id, parent="root")
         if show_n_tasks:
             ordered_tasks = p.get_n_highest_priority_tasks(n=show_n_tasks, include_done=show_done)
             if ordered_tasks:
-                for i, task in enumerate(ordered_tasks):
+                for task in ordered_tasks:
                     task_txt = f"{task.id} ({task.status}) [prio={task.priority}]: {task.name}"
-                    tree.create_node(task_txt, i, parent="header")
+                    tree.create_node(task_txt, i, parent=p.id)
+                    i += 1
                 if len(p.tasks.all) - len(p.tasks.done) > show_n_tasks:
-                    tree.create_node("...", i + 1, parent="header")
+                    tree.create_node("...", i, parent=p.id)
+                    i += 1
             else:
-                tree.create_node("No tasks.", parent="header")
-        tree.show(key=lambda node: node.identifier)
+                tree.create_node("No tasks.", i, parent=p.id)
+                i += 1
+    tree.show(key=lambda node: node.identifier)
 
 
 def ask_for_yn(prompt, action=None):
@@ -125,8 +137,8 @@ def print_task_work_interface(task):
     print(style.format("u", f"Task {task.id}: {task.name}"))
     ask_for_yn("View this task?", action=task.view)
     task.work()
-    print(style.format("y", f"You're now working on '{task.name}'"))
-    print("Now get to work!")
+    print(style.format(SUCCESS_COLOR, f"You're now working on '{task.name}'"))
+    print(style.format("y", "Now get to work!"))
 
 
 def print_task_collection(project, show_done=False, n_shown=100):
@@ -158,14 +170,14 @@ def print_task_collection(project, show_done=False, n_shown=100):
 
 def check_project_id_exists(pmap, project_id):
     if project_id not in pmap.keys():
-        print(f"Project ID {project_id} invalid. Select from the following projects:")
+        print(style.format(ERROR_COLOR, f"Project ID {project_id} invalid. Select from the following projects:"))
         print_projects(pmap, show_n_tasks=0)
         click.Context.exit(1)
 
 
 def check_task_id_exists(project, tid):
     if tid not in project.task_map.keys():
-        print(f"Task ID {tid} invalid. Select from the following tasks in project {project.name}:")
+        print(style.format(ERROR_COLOR, f"Task ID {tid} invalid. Select from the following tasks in project '{project.name}':"))
         print_task_collection(project)
         click.Context.exit(1)
 
@@ -191,7 +203,7 @@ def init(path):
     descriptor = "existing" if os.path.exists(path) else "new"
     s = Schedule(path=path)
     write_path_as_current_root_path(s.path)
-    click.echo(f"{descriptor.capitalize()} schedule initialized in path: {path}")
+    print(f"{descriptor.capitalize()} schedule initialized in path: {path}")
 
 
 # dion work
@@ -199,8 +211,11 @@ def init(path):
 @click.pass_context
 def work(ctx):
     s = ctx.obj["SCHEDULE"]
-    t = s.get_n_highest_priority_tasks(1)[0]
-    print_task_work_interface(t)
+    tasks = s.get_n_highest_priority_tasks(1)
+    if tasks:
+        print_task_work_interface(tasks[0])
+    else:
+        print(style.format(ERROR_COLOR, f"No tasks found for any project in schedule {s.path}."))
 
 
 # Schedule level commands ##############################################################################################
@@ -210,15 +225,25 @@ def work(ctx):
 def schedule(ctx):
     s = ctx.obj["SCHEDULE"]
     pmap = ctx.obj["PMAP"]
+    tree = treelib.Tree()
+    tree.create_node(style.format("u", "Schedule"), "root")
+    i = 0
     for day, project_ids in s.schedule.items():
         if project_ids == schedule_all_projects_key:
             valid_pids = list(pmap.keys())
         else:
             valid_pids = project_ids
-        projects_str = ""
-        for pid in valid_pids:
-            projects_str += f"'{pmap[pid].name}', "
-        print(f"{day}: {projects_str[:-2]}")
+
+        is_today = day == datetime.datetime.today().strftime("%A")
+        color = "c" if is_today else "w"
+        tree.create_node(style.format(color, day), day, data=i, parent="root")
+        i += 1
+
+        for j, pid in enumerate(valid_pids):
+            project_txt = f"{pmap[pid].name}"
+            color = "c" if is_today else "x"
+            tree.create_node(style.format(color, project_txt), data=j, parent=day)
+    tree.show(key=lambda node: node.data)
 
 
 # dion schedule edit
@@ -239,21 +264,40 @@ def projects(ctx):
     if s.get_projects():
         print_projects(s.get_project_map(), show_n_tasks=0)
     else:
-        print("No projects. Use 'dion project new' to create a new project.")
+        print(style.format(ERROR_COLOR, "No projects. Use 'dion project new' to create a new project."))
 
-
+1
 # dion project
-@cli.group(invoke_without_command=False, help="Commands for a single project.")
-@click.argument("project_id", type=click.STRING)
+@cli.group(invoke_without_command=True, help="Command a single project (do 'dion project' w/ no args for new project).")
+@click.argument("project_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def project(ctx, project_id):
-    checks_root_path_loc()
-    s = Schedule(path=get_current_root_path())
-    pmap = s.get_project_map()
-    ctx.obj["SCHEDULE"] = s
-    ctx.obj["PMAP"] = pmap
-    check_project_id_exists(pmap, project_id)
-    ctx.obj["PROJECT"] = pmap[project_id]
+
+    # Avoid scenario where someone types "dion project view" and it interprets "view" as the project id
+    if project_id in PROJECT_SUBCOMMAND_LIST:
+        print(style.format(ERROR_COLOR, f"To access command '{project_id}' use 'dion project [PROJECT_ID] '{project_id}'."))
+        click.Context.exit(1)
+    else:
+        # new project
+        if ctx.invoked_subcommand is None and project_id is None:
+            project_name = input("Enter new project name: ")
+            current_pids = ctx.obj["PMAP"].keys()
+            remaining_pids = copy.deepcopy(valid_project_ids)
+            s = ctx.obj["SCHEDULE"]
+            for pid in current_pids:
+                remaining_pids.remove(pid)
+            new_pid = remaining_pids[0]
+            p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=False)
+            s = Schedule(get_current_root_path())
+            print(f"Project `{p.name}` added.")
+            print_projects(s.get_project_map(), show_n_tasks=0)
+        else:
+            pmap = ctx.obj["PMAP"]
+            check_project_id_exists(pmap, project_id)
+            ctx.obj["PROJECT"] = pmap[project_id]
+
+            if project_id is not None and ctx.invoked_subcommand is None:
+                print("Nothing to do! Invoke a subcommand. Do 'dion project --help' for help.")
 
 
 # dion project [project_id] work
@@ -261,8 +305,11 @@ def project(ctx, project_id):
 @click.pass_context
 def project_work(ctx):
     p = ctx.obj["PROJECT"]
-    t = p.get_n_highest_priority_tasks(n=1)[0]
-    print_task_work_interface(t)
+    tasks = p.get_n_highest_priority_tasks(n=1)
+    if tasks:
+        print_task_work_interface(tasks[0])
+    else:
+        print(style.format(ERROR_COLOR, f"No tasks found for project {p.id}: '{p.name}'"))
 
 
 # dion project [project_id] view
@@ -304,52 +351,20 @@ def project_rename(ctx):
 
 # dion project [project_id] rm
 @project.command(name="rm", help="Remove a project and all of its tasks.")
-@click.argument("project_id", type=click.STRING)
 @click.pass_context
-def project_rm(ctx, project_id):
-    pmap = ctx.obj["PMAP"]
-    check_project_id_exists(project_id)
-    p = pmap[project_id]
+def project_rm(ctx):
+    p = ctx.obj["PROJECT"]
     name = copy.deepcopy(p.name)
     shutil.rmtree(p.path)
     print(f"Project {name} removed.")
 
 
-# dion project new
-@project.command(name="new", help="Create a new project.")
-@click.option("--init-notes", is_flag=False)
-@click.pass_context
-def new_project(ctx, init_notes):
-    project_name = input("Enter new project name: ")
-    current_pids = ctx.obj["PMAP"].keys()
-    remaining_pids = copy.deepcopy(valid_project_ids)
-    s = ctx.obj["SCHEDULE"]
-    for pid in current_pids:
-        remaining_pids.remove(pid)
-    new_pid = remaining_pids[0]
-    print(f"DEBUG: no init notes is {init_notes}")
-    p = Project.create_from_spec(id=new_pid, path_prefix=s.path, name=project_name, init_notes=init_notes)
-    s = Schedule(get_current_root_path())
-    print(f"Project `{p.name}` added.")
-    print(f"All projects:")
-    print_projects(s.get_project_map(), show_n_tasks=0)
-
-
 # Task level commands ##################################################################################################
-def get_task_from_task_id(ctx, task_id):
-    pmap = ctx.obj["PMAP"]
-    project_id = task_id[0]
-    check_project_id_exists(pmap, project_id)
-    p = pmap[project_id]
-    check_task_id_exists(p, task_id)
-    t = p.task_map[task_id]
-    return t
-
 
 # dion tasks
 @cli.command(help="List all (or just some) tasks, ordered by importance.")
 @click.option("--n-shown", "-n", help="Number of tasks shown per project. --tasks-only flattens list.", type=click.INT)
-@click.option("--by-project", '-t', is_flag=True, help="Organize tasks by project.")
+@click.option("--by-project", '-p', is_flag=True, help="Organize tasks by project.")
 @click.option("--show-done", is_flag=True, help="Include done tasks in output.")
 @click.pass_context
 def tasks(ctx, n_shown, by_project, show_done):
@@ -386,11 +401,65 @@ def tasks(ctx, n_shown, by_project, show_done):
 
 
 # dion task
-@cli.group(invoke_without_command=False, help="Commands for a single task.")
-@click.argument("task_id", type=click.STRING)
+@cli.group(invoke_without_command=True, help="Commands for a single task (do 'dion task' w/ on args for new task).")
+@click.argument("task_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def task(ctx, task_id):
-    ctx.obj["TASK"] = get_task_from_task_id(ctx, task_id)
+
+    # Avoid scenario where someone types "dion task view" and it interprets "view" as the project id
+    if task_id in TASK_SUBCOMMAND_LIST:
+        print(style.format(ERROR_COLOR, f"To access command '{task_id}' use 'dion task [PROJECT_ID] '{task_id}'."))
+        click.Context.exit(1)
+    else:
+        if ctx.invoked_subcommand is None and task_id is None:
+            pmap = ctx.obj["PMAP"]
+
+            # select project
+            header_txt = "Select a project id from the following projects:"
+            print(header_txt + "\n" + "-" * len(header_txt))
+            print_projects(pmap, show_n_tasks=0)
+            project_id = input("Project ID: ")
+            check_project_id_exists(pmap, project_id)
+            project = pmap[project_id]
+
+            # enter task specifics
+            task_name = input("Enter a name for this task: ")
+            task_prio = int(input(
+                f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): "))
+            if task_prio not in priority_primitives:
+                print(PRIORITY_WARNING)
+                click.Context.exit(1)
+            task_status = input(
+                f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: ")
+            if not task_status:
+                task_status = "todo"
+            if task_status not in status_primitives:
+                print(STATUS_WARNING)
+                click.Context.exit(1)
+            elif task_status == done_str:
+                print("You can't make a new task as done. Stop wasting time.")
+                click.Context.exit(1)
+            edit_content = ask_for_yn("Edit the task's content?", action=None)
+
+            # create new task
+            t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
+            footer_txt = f"Task {t.id}: '{t.name}' created with priority {t.priority} and status '{t.status}'."
+            print("\n" + "-" * len(footer_txt) + "\n" + footer_txt)
+        else:
+            pmap = ctx.obj["PMAP"]
+
+            try:
+                int(task_id[1:])
+            except ValueError:
+                print(style.format(ERROR_COLOR, f"Task {task_id} not parsed. Task ids are a letter followed by a number. For example, 'a1'."))
+                click.Context.exit(1)
+            project_id = task_id[0]
+            check_project_id_exists(pmap, project_id)
+            p = pmap[project_id]
+            check_task_id_exists(p, task_id)
+            ctx.obj["TASK"] = p.task_map[task_id]
+            if task_id is not None and ctx.invoked_subcommand is None:
+                print("Nothing to do! Invoke a subcommand. Do 'dion task --help' for help.")
 
 
 # dion task [task_id] work
@@ -458,43 +527,6 @@ def task_prio(ctx, priority):
         click.Context.exit(1)
     t.set_priority(priority)
     print(f"Task {t.id}: '{t.name}' priority set to {t.priority}.")
-
-
-# dion task new
-@task.command(name="new", help="Create a new task.")
-@click.pass_context
-def new_task(ctx):
-    pmap = ctx.obj["PMAP"]
-
-    # select project
-    header_txt = "Select a project id from the following projects:"
-    print(header_txt + "\n" + "-"*len(header_txt))
-    print_projects(pmap, show_n_tasks=0)
-    project_id = input("Project ID: ")
-    check_project_id_exists(pmap, project_id)
-    project = pmap[project_id]
-
-    # enter task specifics
-    task_name = input("Enter a name for this task: ")
-    task_prio = int(input(f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): "))
-    if task_prio not in priority_primitives:
-        print(PRIORITY_WARNING)
-        click.Context.exit(1)
-    task_status = input(f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: ")
-    if not task_status:
-        task_status = "todo"
-    if task_status not in status_primitives:
-        print(STATUS_WARNING)
-        click.Context.exit(1)
-    elif task_status == done_str:
-        print("You can't make a new task as done. Stop wasting time.")
-        click.Context.exit(1)
-    edit_content = ask_for_yn("Edit the task's content?", action=None)
-
-    # create new task
-    t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
-    footer_txt = f"Task {t.id}: '{t.name}' created with priority {t.priority} and status '{t.status}'."
-    print("\n" + "-"*len(footer_txt) + "\n" + footer_txt)
 
 
 if __name__ == '__main__':
