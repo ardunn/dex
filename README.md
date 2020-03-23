@@ -49,7 +49,7 @@ If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherw
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
 
-Tasks have both a *status* (todo, doing, on hold, done) and a priority (1-3, lower is more important).
+Tasks have both a **status** (todo, doing, on hold, done) and a **priority** (1-3, lower is more important).
 
 #### Projects
 
@@ -79,7 +79,8 @@ The idea is that all the human effort required to prioritize work is done when y
 For now, clone the repo and install via pip:
 ```bash
 $: git clone https://github.com/ardunn/dion
-$: pip install ./dion --user
+$: cd dion
+$: pip install . -r requirements.txt --user
 ```
 
 
