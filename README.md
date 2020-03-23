@@ -1,7 +1,7 @@
 # `dion` - a productivity system
 
 #### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
-It tells you what to work on and when. You can also create, edit, and view tasks. Use `dion` to get more done in less time with less organization overhead.
+It tells you what to work on and when. You can also create, edit, and view tasks. Use `dion` to get more done in less time with less organization overhead. It is an out-of-the-box usable, optionally programmaticm kanban-ish free productivity CLI which you have absolute control over.
 
 ![dion](./assets/dionysus.jpg)
 ###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
@@ -14,8 +14,9 @@ It tells you what to work on and when. You can also create, edit, and view tasks
 3. Do you like managing things with simple files (such as markdown) rather than online or app interfaces?
 4. Do you find yourself spending too much time figuring out what to work on?
 5. Do you like the command line?
+6. Would you like absolute programmatic control over your productivity tool?
 
-If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherwise, move on.
+If you answered "yes" to 4-6 or more of these questions, `dion` is for you. Otherwise, move on.
 
 
 # Highlights
