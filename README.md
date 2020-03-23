@@ -44,7 +44,7 @@ If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherw
 ![dion](./assets/example_tree.png)
 
 
-## The System
+# The System
 #### Tasks
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
