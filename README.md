@@ -95,7 +95,7 @@ First, initialize an example to work with:
 
 ```bash
 $: dion example ~/Downloads/productivity_system  # creates some example files in your favorite directory
-$: dion init ~/Downloads/productivity_system     # moves dion's attention to this schedule/projects
+$: dion init ~/Downloads/productivity_system     # moves dion's attention to this schedule working directory
 ```
 
 Get an overview of current projects:
