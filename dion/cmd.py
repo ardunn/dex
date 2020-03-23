@@ -43,6 +43,7 @@ dion tasks                             # view ordered tasks across all projects
 dion task [task_id] work               # work on a specific task
 dion task [task_id] done               # mark a task as done
 dion task [task_id] hold               # hold a task
+dion task [task_id] todo
 dion task [task_id] rename             # rename a task
 dion task [task_id] edit               # edit a task
 dion task [task_id] view               # view a task
@@ -216,10 +217,11 @@ def init(path):
 
 # dion work
 @cli.command(help="Automatically determine most important task and start work.")
+@click.option("--randomize", "-r", is_flag=True, help="Randomize tasks with equal importance (default is prioritizing files based on their last modification time).")
 @click.pass_context
-def work(ctx):
+def work(ctx, randomize):
     s = ctx.obj["SCHEDULE"]
-    tasks = s.get_n_highest_priority_tasks(1)
+    tasks = s.get_n_highest_priority_tasks(1, include_done=False, randomize=randomize)
     if tasks:
         print_task_work_interface(tasks[0])
     else:
@@ -312,10 +314,11 @@ def project(ctx, project_id):
 
 # dion project [project_id] work
 @project.command(name="work", help="Automatically determine most important task in a project.")
+@click.option("--randomize", "-r", is_flag=True, help="Randomize tasks with equal importance (default is prioritizing files based on their last modification time).")
 @click.pass_context
-def project_work(ctx):
+def project_work(ctx, randomize):
     p = ctx.obj["PROJECT"]
-    tasks = p.get_n_highest_priority_tasks(n=1)
+    tasks = p.get_n_highest_priority_tasks(n=1, include_done=False, randomize=randomize)
     if tasks:
         print_task_work_interface(tasks[0])
     else:
@@ -494,6 +497,16 @@ def task_done(ctx):
     t = ctx.obj["TASK"]
     t.complete()
     print(f"Task {t.id}: '{t.name}' completed.")
+
+
+# dion task [task_id] todo
+@task.command(name="todo", help="Mark a task as todo (instead of, for example, on hold.")
+@click.pass_context
+def task_todo(ctx):
+    t = ctx.obj["TASK"]
+    old_status = copy.deepcopy(t.status)
+    t.set_status("todo")
+    print(f"Task {t.id}: '{t.name}' set as todo from {old_status}.")
 
 
 # dion task [task_id] hold

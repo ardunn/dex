@@ -114,9 +114,9 @@ class Project:
     def task_map(self):
         return {t.id: t for t in self.tasks.all}
 
-    def get_n_highest_priority_tasks(self, n=1, include_done=False) -> Union[List, None]:
+    def get_n_highest_priority_tasks(self, n=1, include_done=False, randomize=False) -> Union[List, None]:
         # return the highest priority task
-        ordered = order_task_collection(self.tasks, limit=n, include_done=include_done)
+        ordered = order_task_collection(self.tasks, limit=n, include_done=include_done, randomize=randomize)
         if ordered:
             return ordered[:n]
         else:

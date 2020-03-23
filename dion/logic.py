@@ -6,7 +6,7 @@ from dion.task import Task
 from dion.constants import priority_primitives
 
 
-def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done: bool = False) -> List[Task]:
+def order_task_collection(task_collection: AttrDict, limit: int = 0, include_done: bool = False, randomize: bool = False) -> List[Task]:
     """
 
     Order a task collection
@@ -49,9 +49,15 @@ def order_task_collection(task_collection: AttrDict, limit: int = 0, include_don
         plevel_doing = [t for t in tc if t.doing]
         plevel_todo = [t for t in tc if t.todo]
 
-        # oldest modified files are prioritized
-        plevel_doing.sort(key=lambda t: t.modification_time)
-        plevel_todo.sort(key=lambda t: t.modification_time)
+        if randomize:
+            # random order is assigned to otherwise equal tasks
+            random.shuffle(plevel_doing)
+            random.shuffle(plevel_todo)
+        else:
+            # oldest modified files are prioritized
+            plevel_doing.sort(key=lambda t: t.modification_time)
+            plevel_todo.sort(key=lambda t: t.modification_time)
+
         plevel_ordered = plevel_doing + plevel_todo
         ordered = plevel_ordered + ordered
 

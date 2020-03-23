@@ -51,7 +51,7 @@ class Schedule:
             project_map[p.id] = p
         return project_map
 
-    def get_n_highest_priority_tasks(self, n=1, include_done=False):
+    def get_n_highest_priority_tasks(self, n=1, include_done=False, randomize=False):
         today = datetime.datetime.today().strftime("%A")
         todays_project_ids = self.schedule[today]
         pmap = self.get_project_map()
@@ -62,7 +62,7 @@ class Schedule:
         for sp in status_primitives:
             all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
         all_todays_tasks = AttrDict(all_todays_tasks)
-        ordered = order_task_collection(all_todays_tasks, limit=n, include_done=include_done)
+        ordered = order_task_collection(all_todays_tasks, limit=n, include_done=include_done, randomize=randomize)
         return ordered
 
 
