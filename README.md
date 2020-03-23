@@ -330,3 +330,11 @@ Get info about all projects
 ```bash
 $: dion info -v
 ```
+
+```
+The current dion working directory is /home/x/down/example
+There are currently 4 projects.
+There are currently 10 active tasks.
+There are currently 11 total tasks, including done.
+```
+![example_vis2](assets/example_vis2.png)
