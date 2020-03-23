@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-version = "2020.03.05"
+version = "0.1.0.20200322"
 module_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(module_dir, "requirements.txt"), "r") as f:
     requirements = f.read().replace(" ", "").split("\n")
