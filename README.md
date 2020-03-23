@@ -1,7 +1,7 @@
 # `dion` - a productivity system
 
 #### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
-It tells you what to work on and when. You can also create, edit, and view tasks. Use `dion` to get more done in less time with less organization overhead.
+It tells you what to work on and when. You can also create, edit, and view tasks. Use `dion` to get more done in less time with less organization overhead. It is an out-of-the-box usable, optionally programmaticm kanban-ish free productivity CLI which you have absolute control over.
 
 ![dion](./assets/dionysus.jpg)
 ###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
