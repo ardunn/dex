@@ -547,7 +547,7 @@ def task_done(ctx):
 
 
 # dion task [task_id] todo
-@task.command(name="todo", help="Mark a task as todo (instead of, for example, on hold.")
+@task.command(name="todo", help="Mark a task as todo (instead of, for example, on hold).")
 @click.pass_context
 def task_todo(ctx):
     t = ctx.obj["TASK"]
@@ -591,6 +591,7 @@ def task_edit(ctx):
 @click.pass_context
 def task_view(ctx):
     t = ctx.obj["TASK"]
+    print(style.format("u", t.name) + ": " + style.format(status_colormap[t.status], f"({t.status})") + f" [prio={t.priority}]")
     t.view()
 
 

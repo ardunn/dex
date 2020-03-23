@@ -7,7 +7,7 @@ It tells you what to work on and when. You can also create, edit, and view tasks
 ###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
 
 # Is `dion` for me?
-Take this quiz.
+### Take this quiz.
 
 1. Are you tired of trying many "productivity" tools, only to find you spend more time organizing your tasks than you do completing them?
 2. Are you worried if you move from Productivity Service #1 to Productivity Service #2 you will lose/have to re-enter all your project and task info?
@@ -67,10 +67,11 @@ A schedule is your entire set of projects. Your schedule is defined weekly; you 
 `dion`'s system for choosing work tasks is built on a few core assumptions:
 
 1. Choosing what to work on is hard, especially when you have many projects and tasks.
-2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks.
-3. Tasks have higher and lower priorities.
+2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks (AKA "deep work")
+3. Tasks have higher and lower priorities, meaning some need to be done before others.
 
-Based on your schedule, dion chooses the most important task
+Based on your schedule, dion ranks tasks based on the priorities and statuses (among other attributes) of all available tasks.
+The idea is that all the human effort required to prioritize work is done when you enter new tasks, and dion handles the rest on a daily basis.
 
 
 
@@ -82,39 +83,249 @@ $: pip install ./dion --user
 ```
 
 
-Coming soon: PyPi install
+Coming soon, once some kinks are worked out: PyPi install!
 
-### Usage
+# Usage
+
+
+### Basics
 
 First, initialize an example to work with:
 
 ```bash
-$: dion example ~/Downloads/productivity_system  # or your favorite directory
+$: dion example ~/Downloads/productivity_system  # creates some example files in your favorite directory
 $: dion init ~/Downloads/productivity_system     # creates a new dionysus root.
 ```
 
-An overview of current projects:
+Get an overview of current projects:
 
 ```bash
 $: dion projects
 ```
 
-Projects are groups of tasks. Projects can be something like "Write PhD thesis", or "Create eCommerce site", etc.
+```bash
+All projects
+├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
+├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
+└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
+```
+
 Projects in `dion` can be accessed through their *project id*, a single letter.
 
 Now get an overview of tasks for each project.
 
 ```bash
-$: dion tasks --by-project
+$: dion tasks -n 3 --by-project
 ```
 
-Tasks are single, non-trivial objectives toward accomplishing your projects. They have a *status* (todo, doing, on hold,
- or done) and a *priority* (1-3, lower is more important).
- 
- 
+```bash
+All projects
+├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
+│   ├── a3 (todo) [prio=1]: Use NLP to scan literature
+│   ├── a4 (todo) [prio=2]: Learn biology
+│   └── a2 (hold) [prio=2]: Create vaccine
+├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
+│   ├── b3 (todo) [prio=1]: Commission laser weapon
+│   ├── b2 (todo) [prio=2]: Invent warp drive
+│   └── b1 (doing) [prio=3]: try to make peace
+└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
+    ├── c1 (doing) [prio=1]: Look into quantum entanglement
+    ├── c3 (todo) [prio=2]: Get liquid nitrogen
+    └── c2 (hold) [prio=3]: get funding
+```
+
+Tasks are accessible by their *task id*, the project letter followed by an integer (e.g., `a1`)
+
+View all tasks together:
+```bash
+$: dion tasks
+```
+
+```bash
+Top 10 tasks from all 3 projects:
+├── b2 (doing) [prio=1]: Commission laser weapon
+├── d1 (doing) [prio=1]: Look into quantum entanglement
+├── a3 (todo) [prio=1]: Use NLP to scan literature
+├── a4 (todo) [prio=2]: Learn biology
+├── b4 (todo) [prio=2]: Invent warp drive
+├── d3 (todo) [prio=2]: Get liquid nitrogen
+├── b1 (doing) [prio=3]: try to make peace
+├── a2 (hold) [prio=2]: Create vaccine
+└── d2 (hold) [prio=3]: get funding
+```
+
+Start work:
+```bash
+$: dion work
+```
+
+```bash
+Task c1: Look into quantum entanglement
+View this task? (y/n) n
+You're now working on 'Look into quantum entanglement'
+Now get to work!
+```
+
+### Tasks
 
 Adding a task:
 ```bash
 $: dion task new
 ```
 
+```bash
+Select a project id from the following projects:
+------------------------------------------------
+All projects
+├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
+├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
+└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
+
+Project ID: b
+Enter a name for this task: Infiltrate mothership 
+Enter the task's priority (1 - 3, lower is more important): 2
+Enter the task's status (one of ('todo', 'doing', 'hold', 'done'), or hit enter to mark as todo: doing
+Edit the task's content? (y/n) n
+
+----------------------------------------------------------------------------
+Task b4: 'Infiltrate mothership' created with priority 2 and status 'doing'.
+```
+
+Change the status of an existing task
+```bash
+$: dion task b4 done  # complete a task
+```
+or
+```bash
+$: dion task b4 hold  # put a task on hold
+```
+or
+```bash
+$: dion task b4 todo  # mark a task as todo
+``` 
+or
+```bash
+$: dion task b4 work # not recommended, manually set a given task as doing
+```
+
+Change a task priority
+```bash
+$: dion task a1 prio 3
+```
+
+View a task
+```bash
+$: dion task a1 view
+```
+
+```bash
+Get funding: (done) [prio=1]
+
+Need to get funding
+    - Ask federal government?
+    - Ask state government?
+    - Consider private industries
+  Important: tell them u know python
+
+```
+
+Edit a task
+```bash
+$: dion task b2 edit
+```
+
+Rename a task
+```bash
+$: dion task b2 rename
+```
+
+### Projects
+
+Adding a project
+```bash
+$: dion project new
+```
+
+```bash
+Project `Cool new project` added.
+All projects
+├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
+├── Project b: Destroy Aliens [2 todo, 2 doing, 0 held, 0 done]
+├── Project c: Cool new project [0 todo, 0 doing, 0 held, 0 done]
+└── Project d: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
+```
+
+View a single project
+```bash
+$: dion project b view
+```
+
+```bash
+All projects
+└── Project b: Destroy Aliens [2 todo, 2 doing, 0 held, 0 done]
+    ├── b4 (todo) [prio=1]: Commission laser weapon
+    ├── b2 (doing) [prio=2]: Infiltrate mothership
+    ├── b3 (todo) [prio=2]: Invent warp drive
+    └── b1 (doing) [prio=3]: try to make peace
+```
+
+Work on a given project, with task selected by algorithm constrained to this project's tasks
+```bash
+$: dion project b work
+```
+
+```bash
+Task b4: Commission laser weapon
+View this task? (y/n) n
+You're now working on 'Commission laser weapon'
+Now get to work!
+```
+
+Change all priorities of a project's tasks
+```bash
+$: dion project b prio 1
+```
+
+
+Rename a project
+```bash
+$: dion project b rename
+```
+
+Remove a project
+```bash
+$: dion project b rm
+```
+
+### Schedule
+View weekly schedule
+```bash
+$: dion schedule
+```
+
+```bash
+Schedule
+├── Monday
+│   ├── Cure COVID-19
+│   ├── Destroy Aliens
+│   ├── Cool new project
+│   └── Create quantum computer
+...
+└── Sunday
+    ├── Cure COVID-19
+    ├── Destroy Aliens
+    ├── Cool new project
+    └── Create quantum computer
+
+```
+
+Edit weekly schedule
+```bash
+$: dion schedule edit
+```
+
+### Other
+Get info about all projects
+```bash
+$: dion info -v
+```
