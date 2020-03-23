@@ -1,17 +1,40 @@
 # dion
 
-#### dion is an ultra-minimal and opinionated productivity tool.
-It tells you what to work on and when. You can create new tasks, edit existing one, 
-or mark them as doing or done. Get more done in less time.
+#### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
+It tells you what to work on and when. You can also create, edit, and view tasks. Use `dion` to get more done in less time with less organization overhead.
 
 ![dion](./assets/dionysus.jpg)
+###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
 
-#### Who is `dion` for?
-Commmand-line-aholics. People who like to manage their tasks lists as simple
-files rather than online interfaces. Pretty much no one else.
+### Is `dion` for me?
+Take this quiz.
+
+1. Are you tired of trying tons of "productivity" tools, only to find you spend more time organizing your tasks than you do completing them?
+2. Are you worried if you move from Productivity Service #1 to Productivity Service #2 you will lose all your project and task info?
+3. Do you like managing things with simple files (such as markdown) rather than online or app interfaces?
+4. Do you find yourself spending too much time figuring out what to work on?
+5. Do you like the command line?
+
+If you answered "yes" to 3 or more of these questions, `dion` is for you. Otherwise, move on.
 
 
-#### Tell me more...
+### Demo
+```
+(cenv) x@kratos [assets]: dion tasks
+Top 10 tasks from all 3 projects:
+├── c1 (doing) [prio=1]: Look into quantum entanglement
+├── b3 (todo) [prio=1]: Commission laser weapon
+├── a3 (todo) [prio=1]: Use NLP to scan literature
+├── a4 (todo) [prio=2]: Learn biology
+├── b2 (todo) [prio=2]: Invent warp drive
+├── c3 (todo) [prio=2]: Get liquid nitrogen
+├── b1 (doing) [prio=3]: try to make peace
+├── a2 (hold) [prio=2]: Create vaccine
+└── c2 (hold) [prio=3]: get funding
+```
+
+
+### Tell me more...
 `dion` is built on a few core assumptions:
 
 1. Choosing what to work on is hard, especially when you have many projects and tasks.
