@@ -14,6 +14,7 @@ status_primitives = ("hold", "todo", "ip", "done", "abandoned")
 status_primitives_ints = {0: "hold", 1: "todo", 2: "ip", 3: "done", 4: "abandoned"}
 status_primitives_ints_inverted = {v: k for k, v in status_primitives_ints.items()}
 
+dexcode_delimiter_flag = "&"
 no_flags, recurring_flag = flags_primitives = ["r", "n"]
 
 tasks_subdir = "tasks"

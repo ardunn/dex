@@ -3,13 +3,14 @@ import datetime
 
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
-    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives
+    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag
 from dex.exceptions import DexcodeException
+from dex.util import initiate_editor
 
 
 class Task:
-    def __init__(self, dexid: str, path: str, effort: int, due: int, importance: int, status: str, flags: tuple,
-                 content: str = None, edit_content: bool = False):
+    def __init__(self, dexid: str, path: str, effort: int, due: datetime.datetime, importance: int, status: str,
+                 flags: tuple, edit_content: bool = False):
         """
         This instantiation means the file on disk must already exist and must match the arguments. After the Task
         has been instantiated,
@@ -34,6 +35,19 @@ class Task:
         filename_local = os.path.basename(self.path)
         self.name = os.path.splitext(self.path)[0]
 
+        if edit_content:
+            initiate_editor(self.path)
+
+        with open(self.path, "r") as f:
+            content = f.read()
+
+        try:
+            extract_dexcode_from_content(content)
+            content = "\n".join(content.split("\n")[:-1])
+        except ValueError:
+            # No dexcode found, so just return all content including dexcode...
+            pass
+
         self.content = content if content else ""
 
     def __str__(self):
@@ -49,12 +63,12 @@ class Task:
         with open(path, "r") as f:
             content = f.read()
         dexcode = extract_dexcode_from_content(content)
-        dexid, effort, due, importance, status = decode_dexcode(dexcode)
-        return cls(dexid, path, effort, due, importance, status)
+        dexid, effort, due, importance, status, flags = decode_dexcode(dexcode)
+        return cls(dexid, path, effort, due, importance, status, flags)
 
     def write_state(self):
         with open(self.path, "w") as f:
-            dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status)
+            dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
 
 
 #
@@ -97,7 +111,7 @@ def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: 
     if not all([f in flags_primitives for f in flags]):
         raise ValueError(f"Flags strings '{flags}' not all valid flags primitives: '{flags_primitives}")
 
-    flags = "".join(flags)
+    flags = dexcode_delimiter_flag.join(flags)
     due = due.strftime(due_date_fmt)
     return f"{ddl}{dexid}{ddm}e{effort}{ddm}d{due}{ddm}i{importance}{ddm}s{spi_inverted[status]}{ddm}f{flags}{ddr}"
 
@@ -150,9 +164,12 @@ def decode_dexcode(dexcode: str) -> list:
                 except ValueError:
                     raise ValueError(f"Due date datetime object could not be decoded from '{c}'")
             elif reqchar == "f":
-                c = tuple([f for f in c])
-                if not all([f in flags_primitives for f in c]):
-                    raise ValueError(f"Flags strings '{c}' not all valid flags primitives: '{flags_primitives}'")
+                c = tuple([f for f in c.split(dexcode_delimiter_flag)])
+                for flag_expr in c:
+                    if not any([f in flag_expr for f in flags_primitives]):
+                        raise ValueError(
+                            f"Flags strings '{c}' not containing all valid flags primitives: '{flags_primitives}'"
+                        )
             parsed_tokens.append(c)
         return parsed_tokens
     else:
@@ -187,7 +204,7 @@ if __name__ == "__main__":
 
     print(encode_dexcode("a11", 2, d, 1, "done", ("r",)))
 
-    print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr]}"))
+    print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr12&n]}"))
 
     with open("/home/dude/dex/dex/example task.md", "r") as f:
         print(extract_dexcode_from_content(f.read()))
