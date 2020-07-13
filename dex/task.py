@@ -3,7 +3,8 @@ import datetime
 
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
-    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header
+    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header, \
+    hold_str, done_str, ip_str, abandoned_str, todo_str
 from dex.exceptions import DexcodeException
 from dex.util import initiate_editor
 
@@ -73,19 +74,62 @@ class Task:
             f.write(f"\n{dexcode_header} {dexcode}")
 
 
-#
-# def qualifier_converter(to_list, from_list, key) -> Iterable:
-#     return to_list[from_list.index(key)]
+    def set_status(self, new_status: str) -> None:
+        pass
+
+    def set_effort(self, new_effort: int) -> None:
+        pass
+
+    def set_importance(self, new_importance: int) -> None:
+        pass
+
+    def add_flag(self, flag: str) -> None:
+        pass
+
+    def rm_flag(self, flag: str) -> None:
+        pass
+
+    def edit(self) -> None:
+        initiate_editor(self.path)
 
 
-# def check_priority(priority: int) -> None:
-#     if priority not in priority_primitives:
-#         raise PriorityError(f"Priority {priority} invalid. Valid priorities are {priority_primitives}")
-#
-#
-# def check_status(status: str) -> None:
-#     if status not in status_primitives:
-#         raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
+    # Convenience methods and properties
+
+    def set_ip(self) -> None:
+        self.set_status(ip_str)
+
+    def set_done(self) -> None:
+        self.set_status(done_str)
+
+    def set_hold(self) -> None:
+        self.set_status(hold_str)
+
+    def abandon(self) -> None:
+        self.set_status(abandoned_str)
+
+    @property
+    def hold(self):
+        return self.status == hold_str
+
+    @property
+    def done(self):
+        return self.status == done_str
+
+    @property
+    def ip(self):
+        return self.status == ip_str
+
+    @property
+    def todo(self):
+        return self.status == todo_str
+
+    @@property
+    def abandoned(self):
+        return self.status == abandoned_str
+
+    @property
+    def modification_time(self):
+        return os.path.getmtime(self.path)
 
 
 def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: tuple) -> str:

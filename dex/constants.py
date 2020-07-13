@@ -11,8 +11,15 @@ dexcode_header = "######dexcode:"
 effort_primitives = (1, 2, 3, 4, 5)
 importance_primitives = (1, 2, 3, 4, 5)
 due_date_fmt = "%Y-%m-%d"
-status_primitives = ("hold", "todo", "ip", "done", "abandoned")
-status_primitives_ints = {0: "hold", 1: "todo", 2: "ip", 3: "done", 4: "abandoned"}
+
+
+hold_str = "hold"
+todo_str = "todo"
+ip_str = "ip"
+done_str = "done"
+abandoned_str = "abandoned"
+status_primitives = (hold_str, todo_str, ip_str, done_str, abandoned_str)
+status_primitives_ints = {i: s for i, s in enumerate(status_primitives)}
 status_primitives_ints_inverted = {v: k for k, v in status_primitives_ints.items()}
 
 dexcode_delimiter_flag = "&"
