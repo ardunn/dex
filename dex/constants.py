@@ -9,8 +9,9 @@ dexcode_delimiter_mid = "."
 
 effort_primitives = (1, 2, 3, 4, 5)
 importance_primitives = (1, 2, 3, 4, 5)
-status_primitives = ("hold", "todo", "ip", "done")
-status_primitives_ints = {0: "hold", 1: "todo", 2: "ip", 3: "done"}
+due_date_fmt = "%Y-%m-%d"
+status_primitives = ("hold", "todo", "ip", "done", "abandoned")
+status_primitives_ints = {0: "hold", 1: "todo", 2: "ip", 3: "done", 4: "abandoned"}
 status_primitives_ints_inverted = {v: k for k, v in status_primitives_ints.items()}
 
 tasks_subdir = "tasks"
