@@ -3,12 +3,13 @@ import datetime
 
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
-    importance_primitives, valid_project_ids, due_date_fmt
+    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives
 from dex.exceptions import DexcodeException
 
 
 class Task:
-    def __init__(self, dexid: str, path: str, effort: int, due: int, importance: int, status: int):
+    def __init__(self, dexid: str, path: str, effort: int, due: int, importance: int, status: str, flags: tuple,
+                 content: str = None, edit_content: bool = False):
         """
         This instantiation means the file on disk must already exist and must match the arguments. After the Task
         has been instantiated,
@@ -20,18 +21,25 @@ class Task:
         self.effort = effort
         self.importance = importance
         self.status = status
+        self.flags = flags
 
         if not os.path.exists(self.path):
             raise FileNotFoundError("Task was instantiated without corresponding file on disk.")
         elif not self.path.endswith(".md"):
             raise TypeError("Task files must be markdown, and must end in '.md'.")
+        elif os.path.isdir(self.path):
+            raise TypeError("Task cannot be a directory!")
 
         relative_path = os.path.dirname(self.path)
         filename_local = os.path.basename(self.path)
         self.name = os.path.splitext(self.path)[0]
 
+        self.content = content if content else ""
+
     def __str__(self):
-        return f"<dion Task {self.dexid} | {self.name} (status={self.status}, due={self.due}, effort={self.effort}, importance={self.importance})"
+        return f"<dion Task {self.dexid} | {self.name} " \
+               f"(status={self.status}, due={self.due}, " \
+               f"effort={self.effort}, importance={self.importance})"
 
     def __repr__(self):
         return self.__str__()
@@ -44,9 +52,9 @@ class Task:
         dexid, effort, due, importance, status = decode_dexcode(dexcode)
         return cls(dexid, path, effort, due, importance, status)
 
-
     def write_state(self):
-        pass
+        with open(self.path, "w") as f:
+            dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status)
 
 
 #
@@ -64,7 +72,7 @@ class Task:
 #         raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
 
 
-def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str) -> str:
+def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: tuple) -> str:
     """
     Create a dexcode from python objects which are easy to work with.
 
@@ -74,6 +82,7 @@ def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: 
         due (datetime.datetime): When the task is due.
         importance (int): The importance, which must be in importance_primitives.
         status (str): The status string, which must be in status_primitives
+        flags (tuple(str)): All flags for this task (see dex.constants for more info)
 
     Returns:
         dexcode (str): The code representing all metadata about the task which otherwise can't be gathered from the
@@ -85,8 +94,12 @@ def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: 
         raise ValueError(f"Importance value '{importance}' not a valid importance primitive: '{importance_primitives}'")
     if status not in spi_inverted:
         raise ValueError(f"Status string '{status}' not a valid status primitive: '{spi_inverted}'")
+    if not all([f in flags_primitives for f in flags]):
+        raise ValueError(f"Flags strings '{flags}' not all valid flags primitives: '{flags_primitives}")
+
+    flags = "".join(flags)
     due = due.strftime(due_date_fmt)
-    return f"{ddl}{dexid}{ddm}e{effort}{ddm}d{due}{ddm}i{importance}{ddm}s{spi_inverted[status]}{ddr}"
+    return f"{ddl}{dexid}{ddm}e{effort}{ddm}d{due}{ddm}i{importance}{ddm}s{spi_inverted[status]}{ddm}f{flags}{ddr}"
 
 
 def decode_dexcode(dexcode: str) -> list:
@@ -97,19 +110,20 @@ def decode_dexcode(dexcode: str) -> list:
         dexcode (str): The dexcode
 
     Returns:
-        parsed_tokens ([str, int, datetime.datetime, int, str]): [dexid, effort, due, importance, status]
+        parsed_tokens ([str, int, datetime.datetime, int, str, tuple(str)]:
+            [dexid, effort, due, importance, status, flags]
 
     """
     if dexcode.startswith(ddl) and \
             dexcode.endswith(ddr) and \
-            dexcode.count(ddm) == 4 and \
+            dexcode.count(ddm) == 5 and \
             dexcode.count(ddl) == dexcode.count(ddr) == 1:
         tokens = dexcode.replace(ddl, "").replace(ddr, "").split(ddm)
-        dexid, effort, due, importance, status = tokens
+        dexid, effort, due, importance, status, flags = tokens
 
         parsed_tokens = [dexid]
 
-        for reqchar, code in [("e", effort), ("d", due), ("i", importance), ("s", status)]:
+        for reqchar, code in [("e", effort), ("d", due), ("i", importance), ("s", status), ("f", flags)]:
             if not reqchar in code:
                 raise ValueError(f"Required token '{reqchar}' not found in '{code}' token string.")
 
@@ -135,6 +149,10 @@ def decode_dexcode(dexcode: str) -> list:
                     c = datetime.datetime.strptime(c, due_date_fmt)
                 except ValueError:
                     raise ValueError(f"Due date datetime object could not be decoded from '{c}'")
+            elif reqchar == "f":
+                c = tuple([f for f in c])
+                if not all([f in flags_primitives for f in c]):
+                    raise ValueError(f"Flags strings '{c}' not all valid flags primitives: '{flags_primitives}'")
             parsed_tokens.append(c)
         return parsed_tokens
     else:
@@ -143,7 +161,7 @@ def decode_dexcode(dexcode: str) -> list:
 
 def extract_dexcode_from_content(content: str) -> str:
     """
-    Extract a dexcode from content. The dexcode must be on the first line of the content, and must be preceeded by
+    Extract a dexcode from content. The dexcode must be on the LAST line of the content, and must be preceeded by
     ######dexcode:
 
     Args:
@@ -153,7 +171,7 @@ def extract_dexcode_from_content(content: str) -> str:
         dexcode (str): The dexcode
 
     """
-    id_line = content.split("\n")[0]
+    id_line = content.split("\n")[-1]
     if "######dexcode:" in id_line:
         if all([delim in id_line for delim in (ddr, ddl, ddm)]):
             dexcode = id_line[id_line.find(ddl):id_line.find(ddr) + len(ddr)]
@@ -164,13 +182,12 @@ def extract_dexcode_from_content(content: str) -> str:
         raise ValueError("Content missing required dexcode header on first line.")
 
 
-
 if __name__ == "__main__":
     d = datetime.datetime.strptime("2020-07-14", due_date_fmt)
 
-    print(encode_dexcode("a11", 2, d, 1, "done"))
+    print(encode_dexcode("a11", 2, d, 1, "done", ("r",)))
 
-    print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3]}"))
+    print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr]}"))
 
     with open("/home/dude/dex/dex/example task.md", "r") as f:
         print(extract_dexcode_from_content(f.read()))
