@@ -2,21 +2,21 @@ import os
 from setuptools import setup, find_packages
 
 
-version = "0.1.0.20200322"
+version = "0.1.0.20200711"
 module_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(module_dir, "requirements.txt"), "r") as f:
     requirements = f.read().replace(" ", "").split("\n")
 
 long_description = \
     """
-    Dion (Dionysus), a productivity tool.
+    Day executor - dex - organizing your days so you don't have to.
     """
 
 setup(
-    name='dion',
+    name='dex',
     version=str(version),
     description='A command line productivity tool.',
-    url='https://github.com/ardunn/dion',
+    url='https://github.com/ardunn/dex',
     author='Alex Dunn',
     author_email='denhaus@gmail.com',
     long_description=long_description,
@@ -26,7 +26,7 @@ setup(
         'Development Status :: 3 - Alpha',
     ],
     keywords='productivity',
-    test_suite='dion',
+    test_suite='dex',
     tests_require='tests',
     packages=find_packages(),
     # package_data={'rocketsled': ['defaults.yaml']},
@@ -35,6 +35,6 @@ setup(
     include_package_data=True,
     entry_points='''
         [console_scripts]
-        dion=dion.cmd:cli
+        dex=dex.cmd:cli
     ''',
 )

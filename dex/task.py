@@ -213,8 +213,8 @@ if __name__ == "__main__":
     # t = Task.from_file("/home/dude/dex/dex/example task.md")
 
 
-    # t = Task("b44", "/home/dude/dex/dex/example task2.md", 2, d, 5, "todo", ("n",))
+    t = Task("b44", "/home/dude/dex/dex/example task2.md", 2, d, 5, "todo", ("n",), edit_content=True)
     # t.write_state()
 
-    t = Task.from_file("/home/dude/dex/dex/example task2.md")
-    print(t)
+    # t = Task.from_file("/home/dude/dex/dex/example task2.md")
+    # print(t)
