@@ -3,7 +3,7 @@ import datetime
 
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
-    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag
+    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header
 from dex.exceptions import DexcodeException
 from dex.util import initiate_editor
 
@@ -24,23 +24,23 @@ class Task:
         self.status = status
         self.flags = flags
 
-        if not os.path.exists(self.path):
-            raise FileNotFoundError("Task was instantiated without corresponding file on disk.")
-        elif not self.path.endswith(".md"):
+
+        if not self.path.endswith(".md"):
             raise TypeError("Task files must be markdown, and must end in '.md'.")
         elif os.path.isdir(self.path):
             raise TypeError("Task cannot be a directory!")
 
-        relative_path = os.path.dirname(self.path)
+        # relative_path = os.path.dirname(self.path)
         filename_local = os.path.basename(self.path)
-        self.name = os.path.splitext(self.path)[0]
+        self.name = os.path.splitext(filename_local)[0]
 
         if edit_content:
             initiate_editor(self.path)
 
-        with open(self.path, "r") as f:
-            content = f.read()
-
+        content = ""
+        if os.path.exists(self.path):
+            with open(self.path, "r") as f:
+                content = f.read()
         try:
             extract_dexcode_from_content(content)
             content = "\n".join(content.split("\n")[:-1])
@@ -51,9 +51,9 @@ class Task:
         self.content = content if content else ""
 
     def __str__(self):
-        return f"<dion Task {self.dexid} | {self.name} " \
-               f"(status={self.status}, due={self.due}, " \
-               f"effort={self.effort}, importance={self.importance})"
+        return f"<dex Task {self.dexid} | '{self.name}' " \
+               f"(status={self.status}, due={self.due.strftime(due_date_fmt)}, " \
+               f"effort={self.effort}, importance={self.importance}, flags={self.flags})"
 
     def __repr__(self):
         return self.__str__()
@@ -68,7 +68,9 @@ class Task:
 
     def write_state(self):
         with open(self.path, "w") as f:
+            f.write(self.content)
             dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
+            f.write(f"\n{dexcode_header} {dexcode}")
 
 
 #
@@ -189,7 +191,7 @@ def extract_dexcode_from_content(content: str) -> str:
 
     """
     id_line = content.split("\n")[-1]
-    if "######dexcode:" in id_line:
+    if dexcode_header in id_line:
         if all([delim in id_line for delim in (ddr, ddl, ddm)]):
             dexcode = id_line[id_line.find(ddl):id_line.find(ddr) + len(ddr)]
             return dexcode
@@ -200,11 +202,19 @@ def extract_dexcode_from_content(content: str) -> str:
 
 
 if __name__ == "__main__":
-    d = datetime.datetime.strptime("2020-07-14", due_date_fmt)
+    d = datetime.datetime.strptime("2020-07-21", due_date_fmt)
+    # print(encode_dexcode("a11", 2, d, 1, "done", ("r",)))
+    # print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr12&n]}"))
 
-    print(encode_dexcode("a11", 2, d, 1, "done", ("r",)))
+    # with open("/home/dude/dex/dex/example task.md", "r") as f:
+    #     print(extract_dexcode_from_content(f.read()))
 
-    print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr12&n]}"))
 
-    with open("/home/dude/dex/dex/example task.md", "r") as f:
-        print(extract_dexcode_from_content(f.read()))
+    # t = Task.from_file("/home/dude/dex/dex/example task.md")
+
+
+    # t = Task("b44", "/home/dude/dex/dex/example task2.md", 2, d, 5, "todo", ("n",))
+    # t.write_state()
+
+    t = Task.from_file("/home/dude/dex/dex/example task2.md")
+    print(t)

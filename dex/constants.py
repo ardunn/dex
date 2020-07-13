@@ -6,6 +6,7 @@ import mdv
 dexcode_delimiter_left = "{["
 dexcode_delimiter_right = "]}"
 dexcode_delimiter_mid = "."
+dexcode_header = "######dexcode:"
 
 effort_primitives = (1, 2, 3, 4, 5)
 importance_primitives = (1, 2, 3, 4, 5)
