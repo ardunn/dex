@@ -1,3 +1,13 @@
+# WARNING - UNDER CONSTRUCTION
+# `dex` - Day executor: a productivity system
+
+
+
+---
+
+### Previously...
+
+
 # `dion` - a productivity system
 
 #### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
