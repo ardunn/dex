@@ -1,5 +1,7 @@
 import os
 
+from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
+    status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted
 
 class Task:
     def __init__(self, dexid: str, path: str, effort: int, due: int, importance: int, status: int):
@@ -33,7 +35,7 @@ class Task:
 
     @classmethod
     def from_file(cls, filename: str):
-        c
+        pass
 
     @classmethod
     def from_spec(cls, dexid: str, path: str, effort: int, due: int, importance: int, status: int):
@@ -42,20 +44,35 @@ class Task:
     def write_state(self):
         pass
 
-
-def qualifier_converter(to_list, from_list, key) -> Iterable:
-    return to_list[from_list.index(key)]
-
-
-def check_priority(priority: int) -> None:
-    if priority not in priority_primitives:
-        raise PriorityError(f"Priority {priority} invalid. Valid priorities are {priority_primitives}")
+#
+# def qualifier_converter(to_list, from_list, key) -> Iterable:
+#     return to_list[from_list.index(key)]
 
 
-def check_status(status: str) -> None:
-    if status not in status_primitives:
-        raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
+# def check_priority(priority: int) -> None:
+#     if priority not in priority_primitives:
+#         raise PriorityError(f"Priority {priority} invalid. Valid priorities are {priority_primitives}")
+#
+#
+# def check_status(status: str) -> None:
+#     if status not in status_primitives:
+#         raise StatusError(f"Invalid new status {status}. Valid statuses are {status_primitives}")
 
 
 def encode_dexcode(dexid: str, effort: int, due: int, importance: int, status: str):
-    return
+    return f"{ddl}{dexid}{ddm}e{effort}{ddm}d{due}{ddm}i{importance}{ddm}s{spi_inverted[status]}{ddr}"
+
+def decode_dexcode(dexcode: str):
+    req = (ddl, ddm, ddr)
+    if dexcode.startswith(ddl) and dexcode.endswith()
+    else:
+        raise ValueError(f"Not all required delimiters ({req} found in dexcode '{dexcode}'")
+
+
+
+
+
+
+if __name__ == "__main__":
+
+    print(encode_dexcode("a11", 2, 4, 1, "done"))
