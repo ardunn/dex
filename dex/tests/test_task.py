@@ -43,6 +43,18 @@ class TestTask(unittest.TestCase):
         ref_time = datetime.datetime.strptime("2020-08-19", due_date_fmt)
         self.assertTrue( ref_time == t.due)
 
+    def test_rename(self):
+        pass
+
+    def test_convenience(self):
+        pass
+
+    def test_flags(self):
+
+
+    def test_task_setting(self):
+        pass
+
 
 
 

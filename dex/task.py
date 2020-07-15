@@ -121,8 +121,8 @@ class Task:
         self.write_state()
 
     def set_due(self, due: datetime.datetime) -> None:
-        pass
-
+        self.due = due
+        self.write_state()
 
     # Convenience methods and properties
 
@@ -130,14 +130,20 @@ class Task:
         self.set_status(ip_str)
 
     def set_done(self) -> None:
-        # todo: put in subfolder
+        # todo: put in done+abandoned subfolder
         self.set_status(done_str)
 
     def set_hold(self) -> None:
         self.set_status(hold_str)
 
     def abandon(self) -> None:
+        # todo: put in done+abandoned subfolder
         self.set_status(abandoned_str)
+
+    @property
+    def time_till_due(self):
+        # todo: return days, rounding down
+        pass
 
     @property
     def hold(self):
