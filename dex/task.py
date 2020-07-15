@@ -1,22 +1,25 @@
 import os
 import datetime
 
+import mdv
+
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
     importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header, \
-    hold_str, done_str, ip_str, abandoned_str, todo_str
+    hold_str, done_str, ip_str, abandoned_str, todo_str, task_extension
 from dex.exceptions import DexcodeException
 from dex.util import initiate_editor
 
 
 class Task:
     def __init__(self, dexid: str, path: str, effort: int, due: datetime.datetime, importance: int, status: str,
-                 flags: tuple, edit_content: bool = False):
+                 flags: list, edit_content: bool = False):
         """
-        This instantiation means the file on disk must already exist and must match the arguments. After the Task
-        has been instantiated,
+        To not be confusingly stateful or slow, a Task object reflects a task (file) at a certain point in time.
 
+        After the object is updated, you must self.write_state for the state of the object to be written to file.
         """
+
         self.dexid = dexid
         self.path = path
         self.due = due
@@ -31,9 +34,9 @@ class Task:
         elif os.path.isdir(self.path):
             raise TypeError("Task cannot be a directory!")
 
-        # relative_path = os.path.dirname(self.path)
-        filename_local = os.path.basename(self.path)
-        self.name = os.path.splitext(filename_local)[0]
+        self.prefix_path = os.path.dirname(self.path)
+        self.relative_path = os.path.basename(self.path)
+        self.name = os.path.splitext(self.relative_path)[0]
 
         if edit_content:
             initiate_editor(self.path)
@@ -73,24 +76,46 @@ class Task:
             dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
             f.write(f"\n{dexcode_header} {dexcode}")
 
-
-    def set_status(self, new_status: str) -> None:
-        pass
-
-    def set_effort(self, new_effort: int) -> None:
-        pass
-
-    def set_importance(self, new_importance: int) -> None:
-        pass
-
-    def add_flag(self, flag: str) -> None:
-        pass
-
-    def rm_flag(self, flag: str) -> None:
-        pass
-
     def edit(self) -> None:
         initiate_editor(self.path)
+
+    def rename(self, new_name: str):
+        new_name += task_extension   # since the name will not end with .md
+        new_path = os.path.join(self.prefix_path, new_name)
+        os.rename(self.path, new_path)
+
+    def view(self) -> None:
+        formatted = mdv.main(self.content)
+        print(formatted)
+
+
+    # Methods requiring write_state
+
+    def set_status(self, new_status: str) -> None:
+        self.status = new_status
+        self.write_state()
+
+    def set_effort(self, new_effort: int) -> None:
+        self.effort = new_effort
+        self.write_state()
+
+    def set_importance(self, new_importance: int) -> None:
+        self.importance = new_importance
+        self.write_state()
+
+    def add_flag(self, flag: str) -> None:
+        if flag in self.flags:
+            raise ValueError(f"Flag '{flag}' already in flags: '{self.flags}")
+        else:
+            self.flags += flag
+        self.write_state()
+
+    def rm_flag(self, flag: str) -> None:
+        if flag in self.flags:
+            self.flags.remove(flag)
+        else:
+            raise ValueError(f"Flag '{flag}' not in flags: '{self.flags}")
+        self.write_state()
 
 
     # Convenience methods and properties
@@ -123,7 +148,7 @@ class Task:
     def todo(self):
         return self.status == todo_str
 
-    @@property
+    @property
     def abandoned(self):
         return self.status == abandoned_str
 
@@ -132,7 +157,7 @@ class Task:
         return os.path.getmtime(self.path)
 
 
-def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: tuple) -> str:
+def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: list) -> str:
     """
     Create a dexcode from python objects which are easy to work with.
 
@@ -140,9 +165,9 @@ def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: 
         dexid (str): The dex ID (single letter followed by a number).
         effort (int): The effort, which must be in the effort_primitives.
         due (datetime.datetime): When the task is due.
-        importance (int): The importance, which must be in importance_primitives.
+        importance (int): The importance, which must be in importance_primitives
         status (str): The status string, which must be in status_primitives
-        flags (tuple(str)): All flags for this task (see dex.constants for more info)
+        flags ([str]): All flags for this task (see dex.constants for more info)
 
     Returns:
         dexcode (str): The code representing all metadata about the task which otherwise can't be gathered from the
@@ -170,7 +195,7 @@ def decode_dexcode(dexcode: str) -> list:
         dexcode (str): The dexcode
 
     Returns:
-        parsed_tokens ([str, int, datetime.datetime, int, str, tuple(str)]:
+        parsed_tokens ([str, int, datetime.datetime, int, str, [str]]:
             [dexid, effort, due, importance, status, flags]
 
     """
@@ -210,7 +235,7 @@ def decode_dexcode(dexcode: str) -> list:
                 except ValueError:
                     raise ValueError(f"Due date datetime object could not be decoded from '{c}'")
             elif reqchar == "f":
-                c = tuple([f for f in c.split(dexcode_delimiter_flag)])
+                c = [f for f in c.split(dexcode_delimiter_flag)]
                 for flag_expr in c:
                     if not any([f in flag_expr for f in flags_primitives]):
                         raise ValueError(

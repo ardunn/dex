@@ -12,4 +12,11 @@ from dion.exceptions import FileOverwriteError
 from dion.logic import order_task_collection
 
 
-class Project
+class Project:
+    def __init__(self, path: str
+        self.path = path
+        self.id = id
+        self.name = None
+        self.prefix_path = None
+        self.notes_dir = None
+        self.done_dir = None
