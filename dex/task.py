@@ -28,7 +28,6 @@ class Task:
         self.status = status
         self.flags = flags
 
-
         if not self.path.endswith(".md"):
             raise TypeError("Task files must be markdown, and must end in '.md'.")
         elif os.path.isdir(self.path):
@@ -70,6 +69,12 @@ class Task:
         dexid, effort, due, importance, status, flags = decode_dexcode(dexcode)
         return cls(dexid, path, effort, due, importance, status, flags)
 
+    @classmethod
+    def from_spec(cls, *args, **kwargs):
+        t = cls(*args, **kwargs)
+        t.write_state()
+        return t
+
     def write_state(self):
         with open(self.path, "w") as f:
             f.write(self.content)
@@ -88,9 +93,7 @@ class Task:
         formatted = mdv.main(self.content)
         print(formatted)
 
-
     # Methods requiring write_state
-
     def set_status(self, new_status: str) -> None:
         self.status = new_status
         self.write_state()
@@ -117,6 +120,9 @@ class Task:
             raise ValueError(f"Flag '{flag}' not in flags: '{self.flags}")
         self.write_state()
 
+    def set_due(self, due: datetime.datetime) -> None:
+        pass
+
 
     # Convenience methods and properties
 
@@ -124,6 +130,7 @@ class Task:
         self.set_status(ip_str)
 
     def set_done(self) -> None:
+        # todo: put in subfolder
         self.set_status(done_str)
 
     def set_hold(self) -> None:
@@ -179,8 +186,7 @@ def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: 
         raise ValueError(f"Importance value '{importance}' not a valid importance primitive: '{importance_primitives}'")
     if status not in spi_inverted:
         raise ValueError(f"Status string '{status}' not a valid status primitive: '{spi_inverted}'")
-    if not all([f in flags_primitives for f in flags]):
-        raise ValueError(f"Flags strings '{flags}' not all valid flags primitives: '{flags_primitives}")
+    check_flags_valid(flags)
 
     flags = dexcode_delimiter_flag.join(flags)
     due = due.strftime(due_date_fmt)
@@ -236,11 +242,7 @@ def decode_dexcode(dexcode: str) -> list:
                     raise ValueError(f"Due date datetime object could not be decoded from '{c}'")
             elif reqchar == "f":
                 c = [f for f in c.split(dexcode_delimiter_flag)]
-                for flag_expr in c:
-                    if not any([f in flag_expr for f in flags_primitives]):
-                        raise ValueError(
-                            f"Flags strings '{c}' not containing all valid flags primitives: '{flags_primitives}'"
-                        )
+                check_flags_valid(c)
             parsed_tokens.append(c)
         return parsed_tokens
     else:
@@ -268,6 +270,16 @@ def extract_dexcode_from_content(content: str) -> str:
             raise ValueError("Content missing required dexcode delimiters")
     else:
         raise ValueError("Content missing required dexcode header on first line.")
+
+
+def check_flags_valid(flags: list) -> None:
+    print(flags)
+    for flag_expr in flags:
+        print(flag_expr)
+        if not any([f in flag_expr for f in flags_primitives]):
+            raise ValueError(
+                f"Flags strings '{flags}' not containing all valid flags primitives: '{flags_primitives}'"
+            )
 
 
 if __name__ == "__main__":
