@@ -27,7 +27,7 @@ no_flags, recurring_flag = flags_primitives = ["r", "n"]
 
 tasks_subdir = "tasks"
 notes_subdir = "notes"
-done_subdir = "done"
+inactive_subdir = f"{abandoned_str}+{done_str}"
 
 task_extension = ".md"
 schedule_extension = ".json"

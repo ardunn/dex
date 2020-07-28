@@ -20,3 +20,5 @@ class Project:
         self.prefix_path = None
         self.notes_dir = None
         self.done_dir = None
+
+    #todo: move done and abandoned to

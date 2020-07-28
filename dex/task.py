@@ -1,4 +1,5 @@
 import os
+import copy
 import datetime
 from typing import Union
 
@@ -7,8 +8,7 @@ import mdv
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
     importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header, \
-    hold_str, done_str, ip_str, abandoned_str, todo_str, task_extension
-from dex.exceptions import DexcodeException
+    hold_str, done_str, ip_str, abandoned_str, todo_str, task_extension, inactive_subdir
 from dex.util import initiate_editor
 
 
@@ -19,6 +19,9 @@ class Task:
         To not be confusingly stateful or slow, a Task object reflects a task (file) at a certain point in time.
 
         After the object is updated, you must self.write_state for the state of the object to be written to file.
+
+        This class should only be used for changing Tasks which will remain in the same place (excluding renames).
+        Moving files is handled by Project.
         """
 
         self.dexid = dexid
@@ -35,8 +38,8 @@ class Task:
             raise TypeError("Task cannot be a directory!")
 
         self.prefix_path = os.path.dirname(self.path)
-        self.relative_path = os.path.basename(self.path)
-        self.name = os.path.splitext(self.relative_path)[0]
+        self.relative_filename = os.path.basename(self.path)
+        self.name = os.path.splitext(self.relative_filename)[0]
 
         if edit_content:
             initiate_editor(self.path)
@@ -73,10 +76,10 @@ class Task:
     @classmethod
     def from_spec(cls, *args, **kwargs):
         t = cls(*args, **kwargs)
-        t.write_state()
+        t._write_state()
         return t
 
-    def write_state(self):
+    def _write_state(self):
         with open(self.path, "w") as f:
             f.write(self.content)
             dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
@@ -85,71 +88,89 @@ class Task:
     def edit(self) -> None:
         initiate_editor(self.path)
 
-    def rename(self, new_name: str):
-        new_name += task_extension   # since the name will not end with .md
-        new_path = os.path.join(self.prefix_path, new_name)
-        os.rename(self.path, new_path)
-
     def view(self) -> None:
         formatted = mdv.main(self.content)
         print(formatted)
 
-    # Methods requiring write_state
+    # File state change methods
+    ###########################
+
+    def rename(self, new_name: str) -> bool:
+        """
+        Rename a task.
+
+        Args:
+            new_name (str): the new name (forbidden characters in OS paths not allowed_
+
+        Returns:
+            (bool): Whether the file was renamed or not.
+        """
+        if new_name == self.name:
+            return False
+
+        new_filename = f"{new_name}{task_extension}"   # since the name will not end with .md
+        new_path = os.path.join(self.prefix_path, new_filename)
+        os.rename(self.path, new_path)
+        self.path = new_path
+        self.relative_filename = new_filename
+        self.name = new_name
+        return True
+
     def set_status(self, new_status: str) -> None:
+        if new_status == self.status:
+            return None
+
+        active_statuses = [ip_str, todo_str, hold_str]
+        inactive_statuses = [abandoned_str, done_str]
+        if not (new_status in active_statuses and self.status in active_statuses) or \
+            not (new_status in inactive_statuses and self.status in inactive_statuses):
+
+            if new_status in active_statuses and self.status in inactive_statuses:
+                appendage = inactive_subdir
+            elif new_status in inactive_statuses and self.status in active_statuses:
+                appendage = os.pardir
+            else:
+                raise ValueError("Conflict between new status and old status activity!")
+
+            new_prefix_path = os.path.join(self.prefix_path, appendage)
+            new_path = os.path.join(new_prefix_path, self.relative_filename)
+            os.rename(self.path, new_path)
+            self.prefix_path = new_prefix_path
+            self.path = new_path
+
         self.status = new_status
-        self.write_state()
+        self._write_state()
 
     def set_effort(self, new_effort: int) -> None:
         self.effort = new_effort
-        self.write_state()
+        self._write_state()
 
     def set_importance(self, new_importance: int) -> None:
         self.importance = new_importance
-        self.write_state()
+        self._write_state()
 
     def add_flag(self, flag: str) -> None:
         if flag in self.flags:
             raise ValueError(f"Flag '{flag}' already in flags: '{self.flags}")
         else:
             self.flags += flag
-        self.write_state()
+        self._write_state()
 
     def rm_flag(self, flag: str) -> None:
         if flag in self.flags:
             self.flags.remove(flag)
         else:
             raise ValueError(f"Flag '{flag}' not in flags: '{self.flags}")
-        self.write_state()
+        self._write_state()
 
     def set_due(self, due: datetime.datetime) -> None:
         self.due = due
-        self.write_state()
+        self._write_state()
 
-    # Convenience methods and properties
 
-    def set_ip(self) -> None:
-        self.set_status(ip_str)
-
-    def set_done(self) -> None:
-        # todo: put in done+abandoned subfolder
-        self.set_status(done_str)
-
-    def set_hold(self) -> None:
-        self.set_status(hold_str)
-
-    def abandon(self) -> None:
-        # todo: put in done+abandoned subfolder
-        self.set_status(abandoned_str)
-
+    # Properties
     @property
-    def days_till_due(self) -> int:
-        return (self.due - datetime.datetime.now()).days
-
-
-    # Properties based on flags
-
-    @property
-    def recurrence(self) -> tuple[bool, Union[int, None]]:
+    def recurrence(self) -> tuple:
         """
         Determine recurrence and time period of recurrence
 
@@ -164,6 +185,11 @@ class Task:
                 return True, days
         else:
             return False, None
+
+    @property
+    def days_till_due(self) -> int:
+        d = (self.due - datetime.datetime.now()).days
+        return d
 
     @property
     def hold(self):
@@ -310,7 +336,6 @@ def check_flags_valid(flags: list) -> None:
 
     """
     for flag_expr in flags:
-        print(flag_expr)
         if not any([f in flag_expr for f in flags_primitives]):
             raise ValueError(
                 f"Flags strings '{flags}' not containing all valid flags primitives: '{flags_primitives}'"

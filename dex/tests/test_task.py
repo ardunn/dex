@@ -5,7 +5,7 @@ import datetime
 
 
 from dex.task import Task
-from dex.constants import due_date_fmt
+from dex.constants import due_date_fmt, task_extension, todo_str, ip_str, done_str, hold_str, abandoned_str
 
 
 class TestTask(unittest.TestCase):
@@ -43,14 +43,37 @@ class TestTask(unittest.TestCase):
         ref_time = datetime.datetime.strptime("2020-08-19", due_date_fmt)
         self.assertTrue( ref_time == t.due)
 
-    def test_rename(self):
-        pass
+    # Testing methods where the state is written to the file
+    ########################################################
 
-    def test_convenience(self):
-        pass
+    def test_rename(self):
+        test_flle = os.path.join(self.test_dir, "example task.md")
+        t = Task.from_file(test_flle)
+        new_name = "renamed file"
+        t.rename(new_name)
+        self.assertTrue(os.path.exists(os.path.join(self.test_dir, f"{new_name}{task_extension}")))
+        self.assertFalse(os.path.exists(os.path.join(self.test_dir, test_flle)))
+        self.assertEqual(t.name, new_name)
+
+    def test_set_status(self):
+        test_file = os.path.join(self.test_dir, 'example task.md')
+
+        # checking setting the same status
+        t = Task.from_file(test_file)
+        self.assertEqual(t.status, todo_str)
+        t.set_status(todo_str)
+        t = Task.from_file(test_file)
+        self.assertEqual(t.status, todo_str)
+
+        t = Task.from_file(test_file)
+        t.set_status(ip_str)
+        t = Task.from_file()
+        self.assertEqual()
+
+
 
     def test_flags(self):
-
+        pass
 
     def test_task_setting(self):
         pass
