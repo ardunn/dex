@@ -328,6 +328,8 @@ def schedule_edit(ctx):
     initiate_editor(s.schedule_file)
     print(f"Weekly schedule at {s.schedule_file} written.")
 
+# dion sch
+
 
 # Project level commands ###############################################################################################
 # dion projects

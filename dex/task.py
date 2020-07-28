@@ -1,5 +1,6 @@
 import os
 import datetime
+from typing import Union
 
 import mdv
 
@@ -26,7 +27,7 @@ class Task:
         self.effort = effort
         self.importance = importance
         self.status = status
-        self.flags = flags
+        self.flags = list(set(flags))
 
         if not self.path.endswith(".md"):
             raise TypeError("Task files must be markdown, and must end in '.md'.")
@@ -141,9 +142,28 @@ class Task:
         self.set_status(abandoned_str)
 
     @property
-    def time_till_due(self):
-        # todo: return days, rounding down
-        pass
+    def days_till_due(self) -> int:
+        return (self.due - datetime.datetime.now()).days
+
+
+    # Properties based on flags
+
+    @property
+    def recurrence(self) -> tuple[bool, Union[int, None]]:
+        """
+        Determine recurrence and time period of recurrence
+
+        Returns:
+            tuple(bool, (int or None)): 2-tuple of the recurrence (True if recurrent) and the
+            time period of recurrence (None if not recurrent).
+        """
+        for flag in self.flags:
+            if "r" in flag:
+                days_str = flag.replace("r", "").strip()
+                days = int(days_str)
+                return True, days
+        else:
+            return False, None
 
     @property
     def hold(self):
@@ -279,7 +299,16 @@ def extract_dexcode_from_content(content: str) -> str:
 
 
 def check_flags_valid(flags: list) -> None:
-    print(flags)
+    """
+    Ensure list of task flags are valid
+
+    Args:
+        flags ([str]): List of flags
+
+    Returns:
+        None (throws exception if invalid)
+
+    """
     for flag_expr in flags:
         print(flag_expr)
         if not any([f in flag_expr for f in flags_primitives]):

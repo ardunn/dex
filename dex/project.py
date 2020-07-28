@@ -13,7 +13,7 @@ from dion.logic import order_task_collection
 
 
 class Project:
-    def __init__(self, path: str
+    def __init__(self, path): str
         self.path = path
         self.id = id
         self.name = None
