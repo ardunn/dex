@@ -7,6 +7,7 @@ from collections import namedtuple
 from dex.task import Task
 from dex.util import AttrDict
 
+from dex.note import Note
 from dex.task import Task
 from dex.constants import inactive_subdir, status_primitives, notes_subdir, valid_project_ids, task_extension, note_extension
 # from dex.util import process_name, AttrDict
@@ -15,12 +16,13 @@ from dex.exceptions import DexcodeException
 
 
 class Project:
-    def __init__(self, path: str, id: str, tasks: List[Task]):
+    def __init__(self, path: str, id: str, tasks: List[Task], notes: List[Note]):
 
         self.path = path
         self.id = id
 
         self._tasks = tasks
+        self._notes = notes
 
         self.notes_dir = os.path.join(self.path, notes_subdir)
         self.inactive_dir = os.path.join(self.path, inactive_subdir)
@@ -40,16 +42,22 @@ class Project:
         notes_dir = os.path.join(path, notes_subdir)
         inactive_dir = os.path.join(path, inactive_subdir)
 
-        if os.path.exists(path):
-            for f in os.listdir(path) + os.listdir(inactive_dir):
-                f_full = os.path.abspath(os.path.join(os.curdir, f))
-                if f_full.endswith(task_extension):
-                    t = Task.from_file(f_full)
-                    tasks.append(t)
-            for n in os.listdir(notes_dir):
-                n_full = os.path.abspath(os.path.join(os.curdir, n))
-                if n_full.endswith(note_extension):
-                    notes.append(n_full)
+        for subdir in (notes_dir, inactive_dir):
+            if not os.path.exists(subdir):
+                os.makedirs(subdir, exist_ok=False)
+
+        for ft in os.listdir(path) + os.listdir(inactive_dir):
+            f_full = os.path.abspath(os.path.join(os.curdir, ft))
+            if f_full.endswith(task_extension):
+                t = Task.from_file(f_full)
+                tasks.append(t)
+        for fn in os.listdir(notes_dir):
+            n_full = os.path.abspath(os.path.join(os.curdir, fn))
+            if n_full.endswith(note_extension):
+                n = Note.from_file(n_full)
+                notes.append(n)
+
+        return cls(path, id, tasks, notes)
 
 
 
