@@ -1,27 +1,37 @@
 import os
-import copy
 import datetime
-from typing import Union
 
 import mdv
 
 from dex.constants import dexcode_delimiter_left as ddl, dexcode_delimiter_mid as ddm, dexcode_delimiter_right as ddr, \
     status_primitives_ints as spi, status_primitives_ints_inverted as spi_inverted, effort_primitives, \
-    importance_primitives, valid_project_ids, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header, \
+    importance_primitives, due_date_fmt, flags_primitives, dexcode_delimiter_flag, dexcode_header, \
     hold_str, done_str, ip_str, abandoned_str, todo_str, task_extension, inactive_subdir
 from dex.util import initiate_editor
+from dex.exceptions import DexcodeException
 
 
 class Task:
     def __init__(self, dexid: str, path: str, effort: int, due: datetime.datetime, importance: int, status: str,
                  flags: list, edit_content: bool = False):
         """
-        To not be confusingly stateful or slow, a Task object reflects a task (file) at a certain point in time.
+        The core dex object.
 
-        After the object is updated, you must self.write_state for the state of the object to be written to file.
+        To avoid extra statefulness, operations changing core components of the task are immediately written to the
+        corresponding file and the python class. Therefore, the state of the file should reflect the class at any
+        given state and vice versa. These operations are listed under "File state change methods"
 
-        This class should only be used for changing Tasks which will remain in the same place (excluding renames).
-        Moving files is handled by Project.
+        Args:
+            dexid (str): The id of this task, which should be pre-determined by the project.
+            path (str, pathlike): The full path of the file corresponding to this task.
+            effort (int): The effort of the task. Must be within the effrot range defined in constants.py
+            due (datetime.datetime): The due date of the task
+            importance (int): The importance of the task. Must be within the importance range defined in constants.py
+            status (str): String representing the status of the task; must be defied as a valid primitive in constants
+            flags ([str]): Flags - optional arguments augmenting task behavior beyond the core components of a task.
+                For example, ["r22"] means recurring every 22 days. See constants.py for more info on available
+                and valid flags.
+            edit_content (bool); If True, will open the $EDITOR on the <path> specified.
         """
 
         self.dexid = dexid
@@ -51,7 +61,7 @@ class Task:
         try:
             extract_dexcode_from_content(content)
             content = "\n".join(content.split("\n")[:-1])
-        except ValueError:
+        except DexcodeException:
             # No dexcode found, so just return all content including dexcode...
             pass
 
@@ -67,6 +77,17 @@ class Task:
 
     @classmethod
     def from_file(cls, path: str):
+        """
+        Create a Task object from an existing markdown (.md) file. Does not need to contain a dexcode. If write_state
+        is called, the file will be augmented.
+
+        Args:
+            path (str, pathlike): The path of the .md file
+
+        Returns:
+            Task object
+
+        """
         with open(path, "r") as f:
             content = f.read()
         dexcode = extract_dexcode_from_content(content)
@@ -75,6 +96,16 @@ class Task:
 
     @classmethod
     def from_spec(cls, *args, **kwargs):
+        """
+        Create BOTH a Task object and it's associated file in one call from specifications.
+
+        Args:
+            *args, **Kwargs: Args and kwards for Task
+
+        Returns:
+            Task object
+
+        """
         t = cls(*args, **kwargs)
         t._write_state()
         return t
@@ -86,11 +117,22 @@ class Task:
             f.write(f"\n{dexcode_header} {dexcode}")
 
     def edit(self) -> None:
+        """
+        Edit the task
+
+        Returns:
+            None
+        """
         initiate_editor(self.path)
 
-    def view(self) -> None:
-        formatted = mdv.main(self.content)
-        print(formatted)
+    def view(self) -> str:
+        """
+        View the task in the terminal as colored/stylized output.
+
+        Returns:
+            str
+        """
+        return mdv.main(self.content)
 
     # File state change methods
     ###########################
@@ -108,7 +150,7 @@ class Task:
         if new_name == self.name:
             return False
 
-        new_filename = f"{new_name}{task_extension}"   # since the name will not end with .md
+        new_filename = f"{new_name}{task_extension}"  # since the name will not end with .md
         new_path = os.path.join(self.prefix_path, new_filename)
         os.rename(self.path, new_path)
         self.path = new_path
@@ -116,14 +158,23 @@ class Task:
         self.name = new_name
         return True
 
-    def set_status(self, new_status: str) -> None:
+    def set_status(self, new_status: str) -> bool:
+        """
+        Set the status of the task.
+
+        Args:
+            new_status (str): A status primitive as defined in constants.py
+
+        Returns:
+            (bool): Whether the status was changed or not
+        """
         if new_status == self.status:
-            return None
+            return False
 
         active_statuses = [ip_str, todo_str, hold_str]
         inactive_statuses = [abandoned_str, done_str]
         if (new_status in inactive_statuses and self.status in active_statuses) or \
-            (new_status in active_statuses and self.status in inactive_statuses):
+                (new_status in active_statuses and self.status in inactive_statuses):
 
             if new_status in active_statuses and self.status in inactive_statuses:
                 appendage = os.pardir
@@ -140,6 +191,7 @@ class Task:
 
         self.status = new_status
         self._write_state()
+        return True
 
     def set_effort(self, new_effort: int) -> None:
         self.effort = new_effort
@@ -167,24 +219,8 @@ class Task:
         self.due = due
         self._write_state()
 
-
     # Properties
-    @property
-    def recurrence(self) -> tuple:
-        """
-        Determine recurrence and time period of recurrence
-
-        Returns:
-            tuple(bool, (int or None)): 2-tuple of the recurrence (True if recurrent) and the
-            time period of recurrence (None if not recurrent).
-        """
-        for flag in self.flags:
-            if "r" in flag:
-                days_str = flag.replace("r", "").strip()
-                days = int(days_str)
-                return True, days
-        else:
-            return False, None
+    ############
 
     @property
     def days_till_due(self) -> int:
@@ -214,6 +250,24 @@ class Task:
     @property
     def modification_time(self):
         return os.path.getmtime(self.path)
+
+    # Properties based on flags
+    @property
+    def recurrence(self) -> tuple:
+        """
+        Determine recurrence and time period of recurrence
+
+        Returns:
+            tuple(bool, (int or None)): 2-tuple of the recurrence (True if recurrent) and the
+            time period of recurrence (None if not recurrent).
+        """
+        for flag in self.flags:
+            if "r" in flag:
+                days_str = flag.replace("r", "").strip()
+                days = int(days_str)
+                return True, days
+        else:
+            return False, None
 
 
 def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: list) -> str:
@@ -319,9 +373,9 @@ def extract_dexcode_from_content(content: str) -> str:
             dexcode = id_line[id_line.find(ddl):id_line.find(ddr) + len(ddr)]
             return dexcode
         else:
-            raise ValueError("Content missing required dexcode delimiters")
+            raise DexcodeException("Content missing required dexcode delimiters")
     else:
-        raise ValueError("Content missing required dexcode header on first line.")
+        raise DexcodeException("Content missing required dexcode header on last line.")
 
 
 def check_flags_valid(flags: list) -> None:
@@ -340,22 +394,3 @@ def check_flags_valid(flags: list) -> None:
             raise ValueError(
                 f"Flags strings '{flags}' not containing all valid flags primitives: '{flags_primitives}'"
             )
-
-
-if __name__ == "__main__":
-    d = datetime.datetime.strptime("2020-07-21", due_date_fmt)
-    # print(encode_dexcode("a11", 2, d, 1, "done", ("r",)))
-    # print(decode_dexcode("{[a11.e2.d2020-07-14.i1.s3.fr12&n]}"))
-
-    # with open("/home/dude/dex/dex/example task.md", "r") as f:
-    #     print(extract_dexcode_from_content(f.read()))
-
-
-    # t = Task.from_file("/home/dude/dex/dex/example task.md")
-
-
-    t = Task("b44", "/home/dude/dex/dex/example task2.md", 2, d, 5, "todo", ("n",), edit_content=True)
-    # t.write_state()
-
-    # t = Task.from_file("/home/dude/dex/dex/example task2.md")
-    # print(t)
