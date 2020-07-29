@@ -13,3 +13,8 @@ class DexcodeException(DexException):
     Base class for an exception from a dexcode problem.
     """
     pass
+
+
+class FileOverwriteError(DexException):
+    pass
+
