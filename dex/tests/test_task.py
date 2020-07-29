@@ -5,7 +5,7 @@ import datetime
 
 
 from dex.task import Task
-from dex.constants import due_date_fmt, task_extension, todo_str, ip_str, done_str, hold_str, abandoned_str
+from dex.constants import due_date_fmt, task_extension, todo_str, ip_str, done_str, hold_str, abandoned_str, inactive_subdir
 
 
 class TestTask(unittest.TestCase):
@@ -56,7 +56,8 @@ class TestTask(unittest.TestCase):
         self.assertEqual(t.name, new_name)
 
     def test_set_status(self):
-        test_file = os.path.join(self.test_dir, 'example task.md')
+        fname = 'example task.md'
+        test_file = os.path.join(self.test_dir, fname)
 
         # checking setting the same status
         t = Task.from_file(test_file)
@@ -67,15 +68,40 @@ class TestTask(unittest.TestCase):
 
         t = Task.from_file(test_file)
         t.set_status(ip_str)
-        t = Task.from_file()
-        self.assertEqual()
+        t = Task.from_file(test_file)
+        self.assertEqual(t.status, ip_str)
 
+        t = Task.from_file(test_file)
+        t.set_status(hold_str)
+        t = Task.from_file(test_file)
+        self.assertEqual(t.status, hold_str)
 
+        # moving it into an inactive state from an active state
+        t = Task.from_file(test_file)
+        t.set_status(done_str)
 
-    def test_flags(self):
+        expected_newpath = os.path.join(os.path.join(self.test_dir, inactive_subdir), fname)
+        self.assertTrue(t.path == expected_newpath)
+
+        # changing the inactive state
+        t = Task.from_file(expected_newpath)
+        self.assertEqual(t.status, done_str)
+        t.set_status(abandoned_str)
+        self.assertEqual(t.status, abandoned_str)
+        t = Task.from_file(expected_newpath)
+        self.assertEqual(t.status, abandoned_str)
+
+        # Changing from inactive to active stae
+        t.set_status(todo_str)
+        self.assertEqual(t.status, todo_str)
+        self.assertEqual(t.path, test_file)
+        t = Task.from_file(test_file)
+        self.assertEqual(t.status, todo_str)
+
+    def test_setters(self):
         pass
 
-    def test_task_setting(self):
+    def test_flag_setting(self):
         pass
 
 

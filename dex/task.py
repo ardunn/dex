@@ -122,17 +122,17 @@ class Task:
 
         active_statuses = [ip_str, todo_str, hold_str]
         inactive_statuses = [abandoned_str, done_str]
-        if not (new_status in active_statuses and self.status in active_statuses) or \
-            not (new_status in inactive_statuses and self.status in inactive_statuses):
+        if (new_status in inactive_statuses and self.status in active_statuses) or \
+            (new_status in active_statuses and self.status in inactive_statuses):
 
             if new_status in active_statuses and self.status in inactive_statuses:
-                appendage = inactive_subdir
-            elif new_status in inactive_statuses and self.status in active_statuses:
                 appendage = os.pardir
+            elif new_status in inactive_statuses and self.status in active_statuses:
+                appendage = inactive_subdir
             else:
                 raise ValueError("Conflict between new status and old status activity!")
 
-            new_prefix_path = os.path.join(self.prefix_path, appendage)
+            new_prefix_path = os.path.abspath(os.path.join(self.prefix_path, appendage))
             new_path = os.path.join(new_prefix_path, self.relative_filename)
             os.rename(self.path, new_path)
             self.prefix_path = new_prefix_path
