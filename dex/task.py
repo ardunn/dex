@@ -153,7 +153,7 @@ class Task:
         if flag in self.flags:
             raise ValueError(f"Flag '{flag}' already in flags: '{self.flags}")
         else:
-            self.flags += flag
+            self.flags.append(flag)
         self._write_state()
 
     def rm_flag(self, flag: str) -> None:

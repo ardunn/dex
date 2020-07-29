@@ -99,10 +99,34 @@ class TestTask(unittest.TestCase):
         self.assertEqual(t.status, todo_str)
 
     def test_setters(self):
-        pass
+        test_file = os.path.join(self.test_dir, 'example task.md')
+        t = Task.from_file(test_file)
+        ny_2099 = datetime.datetime.strptime("2099-01-01", due_date_fmt)
+        t.set_due(ny_2099)
+        self.assertEqual(ny_2099, t.due)
+        t = Task.from_file(test_file)
+        self.assertEqual(ny_2099, t.due)
+
+        t.set_importance(1)
+        self.assertEqual(t.importance, 1)
+        t = Task.from_file(test_file)
+        self.assertEqual(t.importance, 1)
+
+        t.set_effort(5)
+        self.assertEqual(t.effort, 5)
+        t = Task.from_file(test_file)
+        self.assertEqual(t.effort, 5)
 
     def test_flag_setting(self):
-        pass
+        test_file = os.path.join(self.test_dir, 'example task.md')
+        t = Task.from_file(test_file)
+
+        test_flag = "r22"
+        self.assertTrue(test_flag not in t.flags)
+        t.add_flag(test_flag)
+        self.assertTrue(test_flag in t.flags)
+        t.rm_flag(test_flag)
+        self.assertTrue(test_flag not in t.flags)
 
 
 
