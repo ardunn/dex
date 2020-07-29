@@ -110,7 +110,13 @@ class Task:
         t._write_state()
         return t
 
-    def _write_state(self):
+    def _write_state(self) -> None:
+        """
+        Write the state of the object to the state of the file.
+
+        Returns:
+            (None)
+        """
         with open(self.path, "w") as f:
             f.write(self.content)
             dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)

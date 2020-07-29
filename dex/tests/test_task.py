@@ -5,7 +5,8 @@ import datetime
 
 
 from dex.task import Task, encode_dexcode, decode_dexcode, extract_dexcode_from_content, check_flags_valid
-from dex.constants import due_date_fmt, task_extension, todo_str, ip_str, done_str, hold_str, abandoned_str, inactive_subdir, dexcode_header
+from dex.constants import due_date_fmt, task_extension, todo_str, ip_str, done_str, hold_str, abandoned_str, \
+    inactive_subdir, dexcode_header
 from dex.exceptions import DexcodeException
 
 

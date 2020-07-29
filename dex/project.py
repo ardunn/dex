@@ -19,7 +19,7 @@ class Project:
     def __init__(self, path: str, id: str, tasks: List[Task], notes: List[Note]):
 
         self.path = path
-        self.id = id
+        self.id = process_project_id(id)
 
         self._tasks = tasks
         self._notes = notes
@@ -59,10 +59,18 @@ class Project:
 
         return cls(path, id, tasks, notes)
 
-
-
-
     def rename(self, new_name: str) -> None:
+        """
+        Rename a project. Should be used atomically (i.e., called, then object remade using .from_files()
+
+        Args:
+            new_name (str): The name of the new project.
+
+        Returns:
+            None
+        """
+
+        # todo: this must be used atomically, as the states of all tasks will differ from files after...
         new_path = os.path.join(self.prefix_path, new_name)
         os.rename(self.path, new_path)
         self.path = new_path
@@ -70,6 +78,8 @@ class Project:
     def create_new_task(self, *args, **kwargs) -> Task:
         pass
 
+    def create_new_note(self, *args, **kwargs) -> Note:
+        pass
 
     @property
     def tasks(self):

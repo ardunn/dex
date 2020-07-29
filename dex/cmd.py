@@ -30,6 +30,9 @@ dex project [project_id] rm                 # delete a project
 -------------------
 dex task                              # make a new task
 dex tasks                             # view ordered tasks across all projects
+    (--by-project/-p)
+    (--number/-n [val])
+    
 dex task [task_id] set ...
     (--importance/-i [val]) 
     (--efort/-e [val]) 
@@ -53,7 +56,5 @@ dex task [task_id] done
 dex task [task_id] todo
 dex task [task_id] hold
 dex task [task_id] aban <<alias for abandon>>
-
-
 
 '''
