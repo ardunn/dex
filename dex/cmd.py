@@ -22,20 +22,38 @@ dex project [project_id] work               # work on a task, only for this proj
 dex project [project_id] view               # view a projects tasks in order of importance
 dex project [project_id] prio               # +/- priority of all tasks for a particular project
 dex project [project_id] rename             # rename a project
-dex project [project_id] rm             # delete a project
+dex project [project_id] rm                 # delete a project
+
 
 
 # Task commands
---------------------
+-------------------
 dex task                              # make a new task
 dex tasks                             # view ordered tasks across all projects
-dex task [task_id] work               # work on a specific task
-dex task [task_id] done               # mark a task as done
-dex task [task_id] hold               # hold a task
+dex task [task_id] set ...
+    (--importance/-i [val]) 
+    (--efort/-e [val]) 
+    (--due/-d [val) 
+    (--status/-s [status])
+    (--recurring/-r [days])
+dex task [task_id] view
+dex task [task_id] edit
+dex task [task_id] rename
+
+
+# Task aliases
+-------------------
+dex task [task_id] imp [val]
+dex task [task_id] eff [val]
+dex task [task_id] due [val] 
+    (--recurring/-r [days])
+
+dex task [task_id] work
+dex task [task_id] done
 dex task [task_id] todo
-dex task [task_id] rename             # rename a task
-dex task [task_id] edit               # edit a task
-dex task [task_id] view               # view a task
-dex task [task_id] prio               # set priorities of task
+dex task [task_id] hold
+dex task [task_id] aban <<alias for abandon>>
+
+
 
 '''

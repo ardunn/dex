@@ -30,10 +30,9 @@ notes_subdir = "notes"
 inactive_subdir = f"{abandoned_str}+{done_str}"
 
 task_extension = ".md"
+note_extension = ".md"
 schedule_extension = ".json"
 print_separator = "-"*30
-
-editor = "vim"
 
 
 schedule_fname = f"schedule{schedule_extension}"
