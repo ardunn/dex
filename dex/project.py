@@ -4,6 +4,9 @@ import copy
 from typing import List, Union
 from collections import namedtuple
 
+from dex.task import Task
+from dex.util import AttrDict
+
 from dion.task import Task
 from dion.constants import done_str, status_primitives, priority_primitives, notes_dir_str, \
     task_extension, print_separator
@@ -13,7 +16,7 @@ from dion.logic import order_task_collection
 
 
 class Project:
-    def __init__(self, path): str
+    def __init__(self, path: str, id: str, tasks:):
         self.path = path
         self.id = id
         self.name = None
@@ -21,4 +24,14 @@ class Project:
         self.notes_dir = None
         self.done_dir = None
 
-    #todo: move done and abandoned to
+
+    def __str__(self):
+        n_tasks = len(self.tasks.all)
+        return f"<dex Project {self.id}: [{self.name}] ({n_tasks} tasks)>"
+
+
+    def __repr__(self):
+        return self.__str__()
+
+    @classmethod
+    def from_files(cls, path: str):
