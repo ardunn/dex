@@ -25,7 +25,6 @@ dex project [project_id] rename             # rename a project
 dex project [project_id] rm                 # delete a project
 
 
-
 # Task commands
 -------------------
 dex task                              # make a new task

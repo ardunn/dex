@@ -86,7 +86,7 @@ class Project:
         os.rename(self.path, new_path)
         self.path = new_path
 
-    def create_new_task(self, dexid: str, path: str, effort: int, due: datetime.datetime, importance: int, status: str,
+    def create_new_task(self, dexid: str, name: str, effort: int, due: datetime.datetime, importance: int, status: str,
                  flags: list, edit_content: bool = False) -> Task:
 
         if path in [t.path for t in self.tasks.all]:
@@ -109,30 +109,20 @@ class Project:
     @property
     def tasks(self):
         """
-        A dictionary/class of tasks
+        A dictionary/class of tasks, organized by status. E.g., self.tasks.done
+
         Returns:
+            task_collection (AttrDict): A dict/attr collection of [Task] lists, corresponding to different status
+                primitives. Also includes a key for "all", which is an unordered list of all tasks.
 
         """
         # priority_dict = {priority: [] for priority in priority_primitives}
         task_dict = {status: [] for status in status_primitives}
         task_dict["all"] = self._tasks
         task_collection = AttrDict(task_dict)
-        unique_id = 0
 
         for t in task_dict["all"]:
-
-
-
-        for container_dir in [self.done_dir, self.path]:
-            for f in os.listdir(container_dir):
-                fp = os.path.join(container_dir, f)
-                if os.path.exists(fp):
-                    if fp.endswith(task_extension):
-                        unique_id += 1
-                        pid_tid = f"{self.id}{unique_id}"
-                        t = Task(path=fp, id=pid_tid)
-                        task_collection[t.status].append(t)
-                        task_collection["all"].append(t)
+            task_dict[t.status].append(t)
         return task_collection
 
 
