@@ -16,7 +16,6 @@ class TestProject(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.test_dir)
 
-
     def test_project_from_files(self):
         test_projdir = os.path.join(self.test_dir, "project a")
         proj = Project.from_files(test_projdir, "a")

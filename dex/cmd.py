@@ -25,35 +25,46 @@ dex project [project_id] rename             # rename a project
 dex project [project_id] rm                 # delete a project
 
 
+dex project [id] show tasks
+
+
+
 # Task commands
 -------------------
 dex task                              # make a new task
 dex tasks                             # view ordered tasks across all projects
     (--by-project/-p)
-    (--number/-n [val])
+    (--by-status/-s)
+    (--limit/-l [val])
     
-dex task [task_id] set ...
+dex task [dexid] set ...
     (--importance/-i [val]) 
     (--efort/-e [val]) 
     (--due/-d [val) 
     (--status/-s [status])
     (--recurring/-r [days])
-dex task [task_id] view
-dex task [task_id] edit
-dex task [task_id] rename
+dex task [dexid] view
+dex task [dexid] edit
+dex task [dexid] rename
 
 
 # Task aliases
 -------------------
-dex task [task_id] imp [val]
-dex task [task_id] eff [val]
-dex task [task_id] due [val] 
+dex task [dexid] imp [val]
+dex task [dexid] eff [val]
+dex task [dexid] due [val] 
     (--recurring/-r [days])
 
-dex task [task_id] work
-dex task [task_id] done
-dex task [task_id] todo
-dex task [task_id] hold
-dex task [task_id] aban <<alias for abandon>>
+dex task [dexid] work
+dex task [dexid] done
+dex task [dexid] todo
+dex task [dexid] hold
+dex task [dexid] aban <<alias for abandon>>
+
+
+
+# Note commands
+------------------
+
 
 '''

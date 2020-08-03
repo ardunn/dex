@@ -17,4 +17,3 @@ class DexcodeException(DexException):
 
 class FileOverwriteError(DexException):
     pass
-

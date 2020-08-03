@@ -3,6 +3,7 @@ import random
 import datetime
 import copy
 from typing import List, Union
+import warnings
 from collections import namedtuple
 
 from dex.task import Task
@@ -10,9 +11,9 @@ from dex.util import AttrDict
 
 from dex.note import Note
 from dex.task import Task
-from dex.constants import inactive_subdir, status_primitives, tasks_subdir, notes_subdir, valid_project_ids, task_extension, note_extension
+from dex.constants import abandoned_str, done_str, inactive_subdir, status_primitives, tasks_subdir, notes_subdir, valid_project_ids, task_extension, note_extension
 # from dex.util import process_name, AttrDict
-from dex.exceptions import DexcodeException, FileOverwriteError
+from dex.exceptions import DexException, FileOverwriteError
 # from dex.logic import order_task_collection
 
 
@@ -42,7 +43,7 @@ class Project:
         return self.__str__()
 
     @classmethod
-    def from_files(cls, path: str, id: str):
+    def from_files(cls, path: str, id: str, coerce_pid_mismatches=False):
         tasks = []
         notes = []
 
@@ -61,6 +62,17 @@ class Project:
                 if f_full.endswith(task_extension):
                     t = Task.from_file(f_full)
                     tasks.append(t)
+
+        for task in tasks:
+            project_id = task.dexid[0]
+            number_task_id = int(task.dexid[1:])
+            if project_id != id:
+                warnings.warn(
+                    f"Task {task.dexid} does not have project id matching project {id}: {path}."
+                )
+                if coerce_pid_mismatches:
+                    warnings.warn(f"Converting task {task.dexid} to project {id}!")
+                    task.set_dexid(f"{id}{number_task_id}")
 
         for fn in os.listdir(notes_dir):
             n_full = os.path.abspath(os.path.join(notes_dir, fn))
@@ -86,17 +98,30 @@ class Project:
         os.rename(self.path, new_path)
         self.path = new_path
 
-    def create_new_task(self, dexid: str, name: str, effort: int, due: datetime.datetime, importance: int, status: str,
-                 flags: list, edit_content: bool = False) -> Task:
+    def create_new_task(self,
+                        name: str,
+                        effort: int,
+                        due: datetime.datetime,
+                        importance: int,
+                        status: str,
+                        flags: list,
+                        edit_content: bool = False
+                        ) -> Task:
+
+        fname = name + task_extension
+        path = os.path.join(os.path.join(self.path, tasks_subdir), fname)
+
+        if status in (abandoned_str, done_str):
+            raise DexException("Cannot make a new task with an initially inactive status!")
 
         if path in [t.path for t in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
 
-        all_task_numbers = [int(copy.deepcopy(t.id).replace(self.id, "")) for t in self.tasks.all]
+        all_task_numbers = [int(copy.deepcopy(t.id).replace(self.id, "")) for t in self._tasks]
         max_task_numbers = max(all_task_numbers) if all_task_numbers else 0
         new_task_number = max_task_numbers + 1
         new_task_id = f"{self.id}{new_task_number}"
-        t = Task.create_from_spec(new_task_id, self.path, name, priority, status, edit=edit)
+        t = Task.from_spec(new_task_id, path, effort, due, importance, status, flags, edit_content=edit_content)
         return t
 
     def create_new_note(self, *args, **kwargs) -> Note:
@@ -128,9 +153,7 @@ class Project:
 
     @property
     def task_map(self):
-        pass
-
-
+        return {t.id: t for t in self.tasks.all}
 
 
 def process_project_id(proj_id: str) -> str:
