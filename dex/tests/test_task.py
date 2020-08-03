@@ -148,6 +148,11 @@ class TestTask(unittest.TestCase):
         t = Task.from_file(test_file)
         self.assertEqual(t.effort, 5)
 
+        t.set_dexid("f421")
+        self.assertEqual(t.dexid, "f421")
+        t = Task.from_file(test_file)
+        self.assertEqual(t.dexid, "f421")
+
     def test_flag_setting(self):
         test_file = os.path.join(self.test_dir, 'example task.md')
         t = Task.from_file(test_file)

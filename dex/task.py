@@ -225,6 +225,10 @@ class Task:
         self.due = due
         self._write_state()
 
+    def set_dexid(self, dexid: str) -> None:
+        self.dexid = dexid
+        self._write_state()
+
     # Properties
     ############
 
