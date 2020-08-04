@@ -33,7 +33,7 @@ class Project:
 
         self.notes_dir = os.path.join(self.path, notes_subdir)
         self.tasks_dir = os.path.join(self.path, tasks_subdir)
-        self.inactive_dir = os.path.join(self.path, inactive_subdir)
+        self.inactive_dir = os.path.join(self.tasks_dir, inactive_subdir)
 
     def __str__(self):
         n_tasks = len(self.tasks.all)
@@ -82,6 +82,28 @@ class Project:
 
         return cls(path, id, tasks, notes)
 
+    @classmethod
+    def new(cls, path: str, id: str):
+        """
+        Create a project object
+
+        Args:
+            path: The path of the new project
+            *args, **Kwargs: Args and kwards for Task
+
+        Returns:
+            Project object, with the required directories created
+        """
+        for subdir in (tasks_subdir, notes_subdir):
+            full_subdir = os.path.join(path, subdir)
+            if not os.path.exists(full_subdir):
+                os.makedirs(full_subdir)
+            if subdir == tasks_subdir:
+                full_inactive_subdir = os.path.join(full_subdir, inactive_subdir)
+                if not os.path.exists(full_inactive_subdir):
+                    os.makedirs(full_inactive_subdir)
+        return cls(path, id, tasks=[], notes=[])
+
     def rename(self, new_name: str) -> None:
         """
         Rename a project. Should be used atomically (i.e., called, then object remade using .from_files()
@@ -121,7 +143,7 @@ class Project:
         max_task_numbers = max(all_task_numbers) if all_task_numbers else 0
         new_task_number = max_task_numbers + 1
         new_task_id = f"{self.id}{new_task_number}"
-        t = Task.from_spec(new_task_id, path, effort, due, importance, status, flags, edit_content=edit_content)
+        t = Task.new(new_task_id, path, effort, due, importance, status, flags, edit_content=edit_content)
         return t
 
     def create_new_note(self, *args, **kwargs) -> Note:

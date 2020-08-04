@@ -60,11 +60,11 @@ class TestTask(unittest.TestCase):
         ref_time = datetime.datetime.strptime("2020-07-21", due_date_fmt)
         self.assertTrue( ref_time == t.due)
 
-    def test_task_from_spec(self):
-        local_task_file = "task_from_spec task.md"
+    def test_task_new(self):
+        local_task_file = "task_new task.md"
         test_file = os.path.join(self.test_dir, local_task_file)
         due = datetime.datetime.strptime("2020-08-19", due_date_fmt)
-        t = Task.from_spec("a144", test_file, 4, due, 3, "todo", ["r21"])
+        t = Task.new("a144", test_file, 4, due, 3, "todo", ["r21"])
         self.assertTrue(os.path.exists(test_file))
         self.assertEqual(t.dexid, "a144")
         self.assertEqual(t.effort, 4)

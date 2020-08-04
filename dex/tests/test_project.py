@@ -19,10 +19,11 @@ class TestProject(unittest.TestCase):
     def test_project_from_files(self):
         test_projdir = os.path.join(self.test_dir, "project a")
         proj = Project.from_files(test_projdir, "a")
-        print(proj)
-        print(proj._tasks)
-        print(proj._notes)
+        self.assertEqual(len(proj._tasks), 2)
+        self.assertEqual(len(proj._notes), 1)
+        self.assertEqual(proj.path, test_projdir)
 
-    def test_project_from_spec(self):
-        pass
+    def test_project_new(self):
+        new_projdir = os.path.join(self.test_dir, "project b")
+        proj = Project.from_spec(new_projdir)
 

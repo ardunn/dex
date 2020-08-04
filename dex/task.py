@@ -95,7 +95,7 @@ class Task:
         return cls(dexid, path, effort, due, importance, status, flags)
 
     @classmethod
-    def from_spec(cls, *args, **kwargs):
+    def new(cls, *args, **kwargs):
         """
         Create BOTH a Task object and it's associated file in one call from specifications.
 
