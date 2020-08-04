@@ -184,7 +184,7 @@ class Project:
 
 
     @property
-    def tasks(self):
+    def tasks(self) -> AttrDict:
         """
         A dictionary/class of tasks, organized by status. E.g., self.tasks.done
 
@@ -204,7 +204,7 @@ class Project:
 
 
     @property
-    def task_map(self):
+    def task_map(self) -> dict:
         """
         A DexID: Task obj map of all this project's tasks.
 
