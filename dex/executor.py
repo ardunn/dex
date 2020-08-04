@@ -5,7 +5,7 @@ import itertools
 
 from dex.project import Project
 from dex.constants import executor_fname, valid_project_ids, default_executor
-from dex.logic import order_task_collection
+from dex.logic import rank_tasks
 from dex.constants import status_primitives
 from dex.util import AttrDict
 
@@ -54,7 +54,7 @@ class Executor:
             project_map[p.id] = p
         return project_map
 
-    def get_n_highest_priority_tasks(self, n=1, include_done=False, randomize=False):
+    def get_n_highest_priority_tasks(self, n=1, include_inactive=False:
         today = datetime.datetime.today().strftime("%A")
         todays_project_ids = self.executor[today]
         pmap = self.get_project_map()
@@ -65,5 +65,5 @@ class Executor:
         for sp in status_primitives:
             all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
         all_todays_tasks = AttrDict(all_todays_tasks)
-        ordered = order_task_collection(all_todays_tasks, limit=n, include_done=include_done, randomize=randomize)
+        ordered = rank_tasks(all_todays_tasks, limit=n, include_inactive=include_inactive)
         return ordered

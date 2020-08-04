@@ -240,6 +240,30 @@ class Task:
     ############
 
     @property
+    def priority(self):
+        """
+        Computed priority of the task. Higher priority indicates a task which needs to be done sooner.
+
+        Inactive status tasks are computed using a different formula.
+
+        Returns:
+            (float): The task priority.
+
+        """
+        s = self.status
+        e = self.effort
+        i = self.importance
+        d = self.days_till_due
+
+        if s in (abandoned_str, done_str):
+            return e * i
+        else:
+            # Tasks with due date past or today are given equal priority
+            d = 1 if d < 1 else d
+            s_factor = 1.2 if s == ip_str else 1
+            return i ** 2 * s_factor * e/d
+
+    @property
     def days_till_due(self) -> int:
         d = (self.due - datetime.datetime.now()).days
         return d
