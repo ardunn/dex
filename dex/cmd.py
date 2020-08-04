@@ -65,3 +65,14 @@ dex task [dexid] todo
 dex task [dexid] hold
 dex task [dexid] aban <<alias for abandon>>
 '''
+PROJECT_SUBCOMMAND_LIST = ["work", "view", "prio", "rename", "rm"]
+TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
+
+CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
+CURRENT_ROOT_IGNORE_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.ignore")
+PRIORITY_WARNING = f"Invalid integer priority. Priority==1 is most important, priority=={priority_primitives[-1]} least. Select from {priority_primitives}."
+STATUS_WARNING = f"Invalid status string. Choose from: {status_primitives}"
+style = Style()
+status_colormap = {"todo": "b", "doing": "y", "hold": "m", "done": "g"}
+SUCCESS_COLOR = "c"
+ERROR_COLOR = "r"
