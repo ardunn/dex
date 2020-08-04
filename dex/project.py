@@ -1,20 +1,16 @@
 import os
-import random
 import datetime
 import copy
-from typing import List, Union
+from typing import List
 import warnings
-from collections import namedtuple
 
-from dex.task import Task
 from dex.util import AttrDict
 
 from dex.note import Note
 from dex.task import Task
-from dex.constants import abandoned_str, done_str, inactive_subdir, status_primitives, tasks_subdir, notes_subdir, valid_project_ids, task_extension, note_extension
-# from dex.util import process_name, AttrDict
+from dex.constants import abandoned_str, done_str, inactive_subdir, status_primitives, tasks_subdir, notes_subdir, \
+    valid_project_ids, task_extension, note_extension
 from dex.exceptions import DexException, FileOverwriteError
-# from dex.logic import order_task_collection
 
 
 class Project:
@@ -116,12 +112,12 @@ class Project:
         """
 
         # todo: this must be used atomically, as the states of all tasks will differ from files after...
-        new_path = os.path.join(self.path, new_name)
+        containing_folder = os.path.join(self.path, os.pardir)
+        new_path = os.path.join(containing_folder, new_name)
         os.rename(self.path, new_path)
         self.path = new_path
 
-    def create_new_task(self,
-                        name: str,
+    def create_new_task(self, name: str,
                         effort: int,
                         due: datetime.datetime,
                         importance: int,
@@ -129,6 +125,21 @@ class Project:
                         flags: list,
                         edit_content: bool = False
                         ) -> Task:
+        """
+        Can be used non atomically. Arguments are mostly the same as for Task.
+
+        Args:
+            name (str): The name of the new task. Will be converted to a path by Project for use with Task.
+            effort:
+            due:
+            importance:
+            status:
+            flags:
+            edit_content:
+
+        Returns:
+            Task (the created task).
+        """
 
         fname = name + task_extension
         path = os.path.join(os.path.join(self.path, tasks_subdir), fname)
@@ -139,17 +150,15 @@ class Project:
         if path in [t.path for t in self.tasks.all]:
             raise FileOverwriteError(f"Task already exists with the name: {name}")
 
-        all_task_numbers = [int(copy.deepcopy(t.id).replace(self.id, "")) for t in self._tasks]
+        all_task_numbers = [int(copy.deepcopy(t.dexid).replace(self.id, "")) for t in self._tasks]
         max_task_numbers = max(all_task_numbers) if all_task_numbers else 0
         new_task_number = max_task_numbers + 1
         new_task_id = f"{self.id}{new_task_number}"
         t = Task.new(new_task_id, path, effort, due, importance, status, flags, edit_content=edit_content)
+        self._tasks.append(t)
         return t
 
     def create_new_note(self, *args, **kwargs) -> Note:
-        pass
-
-    def get_n_highest_priority_tasks(self):
         pass
 
 
@@ -175,7 +184,7 @@ class Project:
 
     @property
     def task_map(self):
-        return {t.id: t for t in self.tasks.all}
+        return {t.dexid: t for t in self.tasks.all}
 
 
 def process_project_id(proj_id: str) -> str:
