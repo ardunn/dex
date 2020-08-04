@@ -45,4 +45,4 @@ default_executor = {
 valid_project_ids = list(string.ascii_lowercase)
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
-reference_projset_path = os.path.join(thisdir, "../assets/reference_executor")
+reference_projset_path = os.path.abspath(os.path.join(thisdir, "../assets/reference_executor"))
