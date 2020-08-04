@@ -35,12 +35,9 @@ def rank_tasks(task_collection: AttrDict, limit: int = 0, include_inactive: bool
     hold_ordered = sorted(task_collection.hold, key=lambda x: x.priority, reverse=True)
     ordered = hold_ordered + ordered
 
-    todoing = sorted(task_collection.todo + task_collection.doing, key=lambda x: x.priority, reverse=True)
+    todo_and_ip = sorted(task_collection.todo + task_collection.ip, key=lambda x: x.priority, reverse=True)
 
-    # more advanced ordering for to-do + doing
-    todoing_by_priority = {priority: [] for priority in priority_primitives}
-    for t in todoing:
-        todoing_by_priority[t.priority].append(t)
+    ordered = todo_and_ip + ordered
 
     if limit:
         return ordered[:limit]

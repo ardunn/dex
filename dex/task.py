@@ -71,7 +71,7 @@ class Task:
     def __str__(self):
         return f"<dex Task {self.dexid} | '{self.name}' " \
                f"(status={self.status}, due={self.due.strftime(due_date_fmt)}, " \
-               f"effort={self.effort}, importance={self.importance}, flags={self.flags})"
+               f"effort={self.effort}, importance={self.importance}, flags={self.flags})>"
 
     def __repr__(self):
         return self.__str__()
