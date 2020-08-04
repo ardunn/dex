@@ -1,7 +1,6 @@
 import os
 import string
 
-import mdv
 
 dexcode_delimiter_left = "{["
 dexcode_delimiter_right = "]}"

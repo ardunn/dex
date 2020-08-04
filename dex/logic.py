@@ -3,7 +3,6 @@ from typing import List
 
 from dion.util import AttrDict
 from dion.task import Task
-from dion.constants import priority_primitives
 
 
 def rank_tasks(task_collection: AttrDict, limit: int = 0, include_inactive: bool = False) -> List[Task]:

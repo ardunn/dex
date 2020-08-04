@@ -2,7 +2,7 @@ import os
 import json
 import datetime
 import itertools
-from typing import List, Union
+from typing import List
 
 from dex.task import Task
 from dex.project import Project
