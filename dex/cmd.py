@@ -8,10 +8,11 @@ dex work                             # print and start work on the highest impor
 dex info                             # output some info about the current projects
 dex example                          # create an example directory and set the current project to it
 
-# Schedule commands
+
+# Executor commands
 -------------------
-dex schedule                          # view weekly schedule
-dex schedule edit                     # edit the schedule file
+dex exec view                         # view weekly schedule
+dex exec edit                         # edit the schedule file
 
 
 # Project commands

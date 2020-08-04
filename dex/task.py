@@ -33,6 +33,7 @@ class Task:
                 and valid flags.
             edit_content (bool); If True, will open the $EDITOR on the <path> specified.
         """
+        path = os.path.abspath(path)
 
         self.dexid = dexid
         self.path = path
@@ -194,6 +195,12 @@ class Task:
             os.rename(self.path, new_path)
             self.prefix_path = new_prefix_path
             self.path = new_path
+
+        # For incomplete recurring tasks, keep the due date as it was previously (will go negative)
+        # For recurring tasks being set to "done", move the due date to the current due date + recurrence time
+        is_recurring, days_recurring = self.recurrence
+        if new_status == done_str and is_recurring:
+            self.due = self.due + datetime.timedelta(days=days_recurring)
 
         self.status = new_status
         self._write_state()

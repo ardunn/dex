@@ -31,18 +31,18 @@ inactive_subdir = f"{abandoned_str}+{done_str}"
 
 task_extension = ".md"
 note_extension = ".md"
-schedule_extension = ".json"
+executor_extension = ".json"
 print_separator = "-"*30
 
 
-schedule_fname = f"schedule{schedule_extension}"
-schedule_all_projects_key = "all"
-default_schedule = {
-    day: schedule_all_projects_key for day in
+executor_fname = f"executor{executor_extension}"
+executor_all_projects_key = "all"
+default_executor = {
+    day: executor_all_projects_key for day in
     ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 }
 
 valid_project_ids = list(string.ascii_lowercase)
 
 thisdir = os.path.abspath(os.path.dirname(__file__))
-reference_projset_path = os.path.join(thisdir, "../assets/reference_schedule")
+reference_projset_path = os.path.join(thisdir, "../assets/reference_executor")

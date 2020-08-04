@@ -184,11 +184,22 @@ class TestTask(unittest.TestCase):
 
         recurrence, recurrence_time = t_recurring.recurrence
         self.assertTrue(recurrence)
-        self.assertEqual(recurrence_time, 31)
+        self.assertEqual(recurrence_time, 5)
 
         recurrence, recurrence_time = t_nonrecurring.recurrence
         self.assertFalse(recurrence)
         self.assertIsNone(recurrence_time)
+
+        # Ensure due date is updated to the next due date when the recurring task is completed
+        self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-25", due_date_fmt))
+        t_recurring.set_status(done_str)
+
+        self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-30", due_date_fmt))
+
+        t_recurring = Task.from_file(os.path.join(self.test_dir, f"{inactive_subdir}/recurring task.md"))
+        self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-30", due_date_fmt))
+        self.assertEqual(t_recurring.status, done_str)
+
 
     # Tests dependent on more than 1 method
     #######################################

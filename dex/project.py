@@ -24,7 +24,7 @@ class Project:
             tasks ([Task]): A list of task objects belonging to this project.
             notes ([Note]): A list of note objects belonging to this project.
         """
-
+        path = os.path.abspath(path)
         if not os.path.isdir(path):
             os.makedirs(path)
 
