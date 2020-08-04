@@ -88,6 +88,19 @@ class TestProject(unittest.TestCase):
         for dexid, task in proj.task_map.items():
             self.assertEqual(dexid, task.dexid)
 
+    def test_process_project_id(self):
+
+        for expr in ["AL", "1", "One", "::"]:
+            with self.assertRaises(ValueError):
+                process_project_id(expr)
+
+        for expr in [123]:
+            with self.assertRaises(AttributeError):
+                process_project_id(expr)
+
+        for input_expr, output_expr in {"A": "a", "b": "b"}.items():
+            self.assertEqual(output_expr, process_project_id(input_expr))
+
 
 
 

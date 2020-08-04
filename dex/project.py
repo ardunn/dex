@@ -15,6 +15,15 @@ from dex.exceptions import DexException, FileOverwriteError
 
 class Project:
     def __init__(self, path: str, id: str, tasks: List[Task], notes: List[Note]):
+        """
+        The Project object, representing a long-standing collection of tasks and notes.
+
+        Args:
+            path (str): The path of the project folder
+            id (str): The alphabetic single character representing this project's id.
+            tasks ([Task]): A list of task objects belonging to this project.
+            notes ([Note]): A list of note objects belonging to this project.
+        """
 
         if not os.path.isdir(path):
             os.makedirs(path)
@@ -40,6 +49,18 @@ class Project:
 
     @classmethod
     def from_files(cls, path: str, id: str, coerce_pid_mismatches=False):
+        """
+        Generate a Project object from existing files.
+
+        Args:
+            path (str): The path of the project folder. Should already contain tasks and notes subdirs
+            id (str): a single alphabetic character representing the project id. Must be unique
+            coerce_pid_mismatches (bool): If True, will coerce existing tasks with mismatching project ids to match
+                this project's id.
+
+        Returns:
+            Project object
+        """
         tasks = []
         notes = []
 
@@ -184,6 +205,13 @@ class Project:
 
     @property
     def task_map(self):
+        """
+        A DexID: Task obj map of all this project's tasks.
+
+        Returns:
+            (dict): {dexid: Task} entries
+
+        """
         return {t.dexid: t for t in self.tasks.all}
 
 
