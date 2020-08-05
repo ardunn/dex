@@ -285,7 +285,7 @@ def info(ctx, visualize):
 # dion example [root path]
 @cli.command(help="Get info about your projects. Enter a new folder path for the project directory!")
 @click.argument("path", type=click.Path(file_okay=False, dir_okay=False))
-def example(path):
+def example(path):~
     if os.path.exists(path):
         print(f"Path {path} exists. Choose a new path.")
     shutil.copytree(reference_projset_path, path)
@@ -342,7 +342,7 @@ def projects(ctx):
     else:
         print(style.format(ERROR_COLOR, "No projects. Use 'dion project new' to create a new project."))
 
-1
+
 # dion project
 # dion project new
 @cli.group(invoke_without_command=True, help="Command a single project (do 'dion project' or 'dion project new' w/ no args for new project).")

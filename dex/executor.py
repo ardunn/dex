@@ -2,18 +2,19 @@ import os
 import json
 import datetime
 import itertools
-from typing import List
+from typing import List, Union, Iterable
 
 from dex.task import Task
 from dex.project import Project
 from dex.constants import executor_fname, valid_project_ids, default_executor, executor_all_projects_key
+from dex.constants import today_in_executor_format as today
 from dex.logic import rank_tasks
 from dex.constants import status_primitives
 from dex.util import AttrDict
 
 
 class Executor:
-    def __init__(self, path, ignored_dirs=None):
+    def __init__(self, path: str, ignored_dirs: Union[Iterable, None] = None):
         """
         Executor handles all projects and interfaces mostly with the CLI. It is at the top of the hierarchy.
 
@@ -69,26 +70,41 @@ class Executor:
         """
         return {p.id: p for p in self.projects}
 
-    def get_n_highest_priority_tasks(self, n: int = 1, include_inactive: bool = False) -> List[Task]:
+    def get_tasks(self, only_today: bool) -> AttrDict:
+        """
+        Get a task collection of tasks across more than one project.
+
+        Args:
+            only_today (bool): If True, include only the projects which are specified for today.
+
+        Returns:
+            AttrDict: The task collection across
+
+        """
+        todays_project_ids = self.executor_week[today]
+        pmap = self.project_map
+        if todays_project_ids == executor_all_projects_key or not only_today:
+            todays_project_ids = list(pmap.keys())
+        todays_projects = [pmap[pid] for pid in todays_project_ids]
+        relevant_tasks = {}
+        for sp in status_primitives:
+            relevant_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
+        relevant_tasks = AttrDict(relevant_tasks)
+        return relevant_tasks
+
+    def get_n_highest_priority_tasks(self, n: int = 1, only_today: bool = False, include_inactive: bool = False) -> List[Task]:
         """
         Get the n highest priority tasks using the executor file (schedule) to determine the valid projects to use.
 
         Args:
             n (int): Number of tasks to return.
             include_inactive (bool): Include inactive (done+abandoned) tasks in the returned list.
+            only_today (bool): If True, include only the projects which are specified for today.
 
         Returns:
+            [Task]: List of ordered tasks
 
         """
-        today = datetime.datetime.today().strftime("%A")
-        todays_project_ids = self.executor_week[today]
-        pmap = self.project_map
-        if todays_project_ids == executor_all_projects_key:
-            todays_project_ids = list(pmap.keys())
-        todays_projects = [pmap[pid] for pid in todays_project_ids]
-        all_todays_tasks = {}
-        for sp in status_primitives:
-            all_todays_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
-        all_todays_tasks = AttrDict(all_todays_tasks)
+        all_todays_tasks = self.get_tasks(only_today=only_today)
         ordered = rank_tasks(all_todays_tasks, limit=n, include_inactive=include_inactive)
         return ordered
