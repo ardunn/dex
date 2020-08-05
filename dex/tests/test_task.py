@@ -74,6 +74,14 @@ class TestTask(unittest.TestCase):
         ref_time = datetime.datetime.strptime("2020-08-19", due_date_fmt)
         self.assertTrue(ref_time == t.due)
 
+        # test an existing file without a dexcode
+        local_task_file = "task_without_dexcode.md"
+        test_file = os.path.join(self.test_dir, local_task_file)
+        t = Task.new("a145", test_file, 4, due, 2, "todo", ["r7"])
+        with open(t.path, "r") as f:
+            self.assertTrue(t.dexcode in f.read())
+
+
     # Testing methods where the state is written to the file
     ########################################################
 

@@ -98,7 +98,8 @@ class Task:
     @classmethod
     def new(cls, *args, **kwargs):
         """
-        Create BOTH a Task object and it's associated file in one call from specifications.
+        Create BOTH a Task object and it's associated file in one call from specifications. Works also with existing
+        files not containing a dexcode. Will overwrite dexcodes if present in the file.
 
         Args:
             *args, **Kwargs: Args and kwards for Task
@@ -120,8 +121,7 @@ class Task:
         """
         with open(self.path, "w") as f:
             f.write(self.content)
-            dexcode = encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
-            f.write(f"\n{dexcode_header} {dexcode}")
+            f.write(f"\n{dexcode_header} {self.dexcode}")
 
     def edit(self) -> None:
         """
@@ -309,6 +309,16 @@ class Task:
                 return True, days
         else:
             return False, None
+
+    @property
+    def dexcode(self) -> str:
+        """
+        The dexcode of this task.
+
+        Returns:
+            (str): The dexcode
+        """
+        return encode_dexcode(self.dexid, self.effort, self.due, self.importance, self.status, self.flags)
 
 
 def encode_dexcode(dexid: str, effort: int, due: datetime.datetime, importance: int, status: str, flags: list) -> str:

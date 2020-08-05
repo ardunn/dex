@@ -6,7 +6,7 @@ from typing import List
 
 from dex.task import Task
 from dex.project import Project
-from dex.constants import executor_fname, valid_project_ids, default_executor
+from dex.constants import executor_fname, valid_project_ids, default_executor, executor_all_projects_key
 from dex.logic import rank_tasks
 from dex.constants import status_primitives
 from dex.util import AttrDict
@@ -83,7 +83,7 @@ class Executor:
         today = datetime.datetime.today().strftime("%A")
         todays_project_ids = self.executor_week[today]
         pmap = self.project_map
-        if todays_project_ids == "all":
+        if todays_project_ids == executor_all_projects_key:
             todays_project_ids = list(pmap.keys())
         todays_projects = [pmap[pid] for pid in todays_project_ids]
         all_todays_tasks = {}

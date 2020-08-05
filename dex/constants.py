@@ -1,6 +1,6 @@
 import os
 import string
-
+import datetime
 
 dexcode_delimiter_left = "{["
 dexcode_delimiter_right = "]}"
@@ -10,6 +10,9 @@ dexcode_header = "######dexcode:"
 effort_primitives = (1, 2, 3, 4, 5)
 importance_primitives = (1, 2, 3, 4, 5)
 due_date_fmt = "%Y-%m-%d"
+
+# max due date is 1 year in the future
+max_due_date = datetime.datetime.today() + datetime.timedelta(days=365)
 
 
 hold_str = "hold"

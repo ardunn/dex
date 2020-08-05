@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import click
 import treelib
@@ -11,7 +12,7 @@ from dex.constants import status_primitives, hold_str, done_str, abandoned_str, 
 # Top level commands
 --------------------
 dex init [root path]                                # create a new executor file and save the path somewhere
-dex work                                            # print and start work on the highest importance task, printing all info
+dex exec                                            # print and start work on the highest importance task, printing all info
 dex info                                            # output some info about the current projects
 dex example                                         # create an example directory and set the current project to it
 
@@ -30,8 +31,8 @@ dex tasks                                           # view ordered tasks across 
 
 # Executor commands
 -------------------
-dex exec view                                       # view weekly schedule
-dex exec edit                                       # edit the schedule file
+dex executor view                                   # view weekly schedule
+dex executor edit                                   # edit the schedule file
 
 
 # Project commands
@@ -66,7 +67,7 @@ dex task [dexid] eff [val]
 dex task [dexid] due [val] 
     (--recurring/-r [days])
 
-dex task [dexid] work
+dex task [dexid] exec
 dex task [dexid] done
 dex task [dexid] todo
 dex task [dexid] hold
@@ -79,6 +80,7 @@ TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
 CONTAINER_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_ROOT_PATH_LOC = os.path.join(CONTAINER_DIR, "current_root.path")
 CURRENT_ROOT_IGNORE_LOC = os.path.join(CONTAINER_DIR, "current_root.ignore")
+REFERENCE_PROJSET_PATH = os.path.join(CONTAINER_DIR, "assets/reference_executor")
 
 STATUS_COLORMAP = {"todo": "b", "ip": "y", "hold": "m", "done": "g", "abandoned": "k"}
 SUCCESS_COLOR = "c"
@@ -240,6 +242,115 @@ def cli(ctx):
         e = Executor(path=get_current_root_path(), ignored_dirs=get_current_ignore())
         ctx.obj["EXECUTOR"] = e
         ctx.obj["PMAP"] = e.project_map
+
+
+# Root level commands ##################################################################################################
+# dex init
+@cli.command(help="Initialize a new set of projects. You can only have one active.")
+@click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
+@click.option("--ignore", "-i", multiple=True)
+def init(path, ignore):
+    if not ignore:
+        ignore = tuple()
+    descriptor = "existing" if os.path.exists(path) else "new"
+    s = Executor(path=path, ignored_dirs=ignore)
+    write_path_as_current_root_path(s.path)
+    write_ignore(ignore)
+    print(f"{descriptor.capitalize()} executor initialized in path: {path}")
+
+
+# dex work
+@cli.command(help="Automatically determine most important task and start work.")
+@click.pass_context
+def work(ctx):
+    e = ctx.obj["EXECUTOR"]
+    tasks = e.get_n_highest_priority_tasks(1, include_inactive=False)
+    if tasks:
+        print_task_work_interface(tasks[0])
+    else:
+        print(ts.f(ERROR_COLOR, f"No tasks found for any project in executor {e.path}. Add a new task with 'dex task'"))
+
+
+
+# @cli.command(help="Get info about your projects.")
+# @click.option("--visualize", "-v", is_flag=True, help="Make a graph of current tasks.")
+# @click.pass_context
+# def info(ctx, visualize):
+#     s = ctx.obj["SCHEDULE"]
+#     print(f"The current dion working directory is {s.path}")
+#     print(f"There are currently {len(s.get_projects())} projects.")
+#     print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=False))} active tasks.")
+#     print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=True))} total tasks, including done.")
+#
+#     if visualize:
+#         projects = s.get_projects()
+#         n_tasks_w_status = {sp: 0 for sp in status_primitives}
+#         n_tasks_w_priority = {pp: 0 for pp in priority_primitives}
+#         for p in projects:
+#             tasks = p.tasks
+#             for sp in status_primitives:
+#                 n_tasks_w_status[sp] += len(tasks[sp])
+#             for pp in priority_primitives:
+#                 n_tasks_w_priority[pp] += len([t for t in tasks.all if t.priority == pp and t.status != done_str])
+#
+#         seaborn.set_style("darkgrid")
+#         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+#         ax_status, ax_prio = axes
+#
+#         seaborn.barplot([f"priority {pp}" for pp in priority_primitives], [n_tasks_w_priority[pp] for pp in priority_primitives], ax=ax_prio, palette=seaborn.color_palette("Blues_r", len(priority_primitives)))
+#         ax_prio.set_title("Current active (not done) tasks by priority")
+#         seaborn.barplot(list(status_primitives), [n_tasks_w_status[sp] for sp in status_primitives], ax=ax_status, palette=seaborn.color_palette("Reds_r", len(status_primitives)))
+#         ax_status.set_title("All tasks by status")
+#
+#         fig.tight_layout()
+#         plt.show()
+
+
+# dex example [root path]
+# @cli.command(help="Get info about your projects. Enter a new folder path for the project directory!")
+# @click.argument("path", type=click.Path(file_okay=False, dir_okay=False))
+# def example(path):
+#     if os.path.exists(path):
+#         print(f"Path {path} exists. Choose a new path.")
+#     shutil.copytree(REFERENCE_PROJSET_PATH, path)
+#     print(f"New example created at {path}. Use 'dion init {path}' to initialize it and start work!")
+
+
+# Schedule level commands ##############################################################################################
+# dion schedule
+@cli.group(invoke_without_command=True, help="Weekly executor (schedule) related commands.")
+@click.pass_context
+def executor(ctx):
+    s = ctx.obj["EXECUTOR"]
+    pmap = ctx.obj["PMAP"]
+    tree = treelib.Tree()
+    tree.create_node(ts.f("u", "Schedule"), "root")
+    i = 0
+    for day, project_ids in s.schedule.items():
+        if project_ids == schedule_all_projects_key:
+            valid_pids = list(pmap.keys())
+        else:
+            valid_pids = project_ids
+
+        is_today = day == datetime.datetime.today().strftime("%A")
+        color = "c" if is_today else "w"
+        tree.create_node(style.format(color, day), day, data=i, parent="root")
+        i += 1
+
+        for j, pid in enumerate(valid_pids):
+            project_txt = f"{pmap[pid].name}"
+            color = "c" if is_today else "x"
+            tree.create_node(style.format(color, project_txt), data=j, parent=day)
+    tree.show(key=lambda node: node.data)
+
+
+# dion schedule edit
+@schedule.command(name="edit", help="Edit your weekly schedule via project ids.")
+@click.pass_context
+def schedule_edit(ctx):
+    s = ctx.obj["SCHEDULE"]
+    initiate_editor(s.schedule_file)
+    print(f"Weekly schedule at {s.schedule_file} written.")
 
 
 if __name__ == '__main__':
