@@ -14,7 +14,7 @@ due_date_fmt = "%Y-%m-%d"
 # max due date is 1 year in the future
 max_due_date = datetime.datetime.today() + datetime.timedelta(days=365)
 today_in_executor_format = datetime.datetime.today().strftime("%A")
-
+valid_recurrence_times = tuple(range(1, 365))
 
 hold_str = "hold"
 todo_str = "todo"

@@ -11,8 +11,8 @@ from dex.executor import Executor
 from dex.logic import rank_tasks
 from dex.util import TerminalStyle, initiate_editor, AttrDict
 from dex.constants import status_primitives, hold_str, done_str, abandoned_str, ip_str, todo_str, \
-    executor_all_projects_key, valid_project_ids
-from dex.constants import today_in_executor_format
+    executor_all_projects_key, valid_project_ids, importance_primitives, effort_primitives, max_due_date, due_date_fmt
+from dex.constants import today_in_executor_format, valid_recurrence_times
 
 '''
 # Top level commands
@@ -88,6 +88,7 @@ CONTAINER_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_ROOT_PATH_LOC = os.path.join(CONTAINER_DIR, "current_root.path")
 CURRENT_ROOT_IGNORE_LOC = os.path.join(CONTAINER_DIR, "current_root.ignore")
 REFERENCE_PROJSET_PATH = os.path.join(CONTAINER_DIR, "assets/reference_executor")
+MAX_ENTRY_RETRIES = 3
 
 STATUS_COLORMAP = {"todo": "b", "ip": "y", "hold": "m", "done": "g", "abandoned": "k"}
 SUCCESS_COLOR = "c"
@@ -534,21 +535,20 @@ def tasks(ctx, n_shown, all_projects, include_inactive):
     #                 tree.create_node("No tasks", parent="header")
     #                 break
 
-# dion task
-# dion task new
-@cli.group(invoke_without_command=True, help="Commands for a single task (do 'dion task' or 'dion task new' w/ on args for new task).")
+# dex task
+# dex task new
+@cli.group(invoke_without_command=True, help="Commands for a single task (do 'dex task new' w/ no args for new task).")
 @click.argument("task_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def task(ctx, task_id):
+    pmap = ctx.obj["PMAP"]
 
     # Avoid scenario where someone types "dion task view" and it interprets "view" as the project id
     if task_id in TASK_SUBCOMMAND_LIST:
-        print(style.format(ERROR_COLOR, f"To access command '{task_id}' use 'dion task [PROJECT_ID] '{task_id}'."))
+        print(ts.f(ERROR_COLOR, f"To access command '{task_id}' use 'dion task [DEX_ID] '{task_id}'."))
         click.Context.exit(1)
     else:
-        if ctx.invoked_subcommand is None and task_id in [None, "new"]:
-            pmap = ctx.obj["PMAP"]
-
+        if ctx.invoked_subcommand is None and task_id == "new":
             # select project
             header_txt = "Select a project id from the following projects:"
             print(header_txt + "\n" + "-" * len(header_txt))
@@ -561,34 +561,105 @@ def task(ctx, task_id):
             # enter task specifics
             task_name = input("Enter a name for this task: ")
             check_input_not_empty(task_name)
-            task_prio = int(input(
-                f"Enter the task's priority ({priority_primitives[0]} - {priority_primitives[-1]}, lower is more important): "))
-            if task_prio not in priority_primitives:
-                print(PRIORITY_WARNING)
+
+            task_due, task_imp, task_eff, task_status, task_flags = None, None, None, None, None
+
+            for _ in range(MAX_ENTRY_RETRIES):
+                task_imp = int(input(
+                    f"Enter the task's importance ({importance_primitives[0]} - {importance_primitives[-1]} (higher is more important): "))
+                if task_imp not in importance_primitives:
+                    print(ts.f(ERROR_COLOR, f"'{task_imp}' is not a valid importance value. Choose from {importance_primitives}"))
+                    continue
+                else:
+                    break
+            else:
+                print(ts.f(ERROR_COLOR, "Could not parse importance, exiting..."))
                 click.Context.exit(1)
-            task_status = input(
-                f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: ")
-            if not task_status:
-                task_status = "todo"
-            if task_status not in status_primitives:
-                print(STATUS_WARNING)
+
+            for _ in range(MAX_ENTRY_RETRIES):
+                task_eff = int(input(
+                    f"Enter the how much effort the task will take ({effort_primitives[0]} - {effort_primitives[-1]} (higher is more effort): "))
+                if task_eff not in effort_primitives:
+                    print(ts.f(ERROR_COLOR, f"'{task_eff}' is not a valid effort value. Choose from {effort_primitives}"))
+                    continue
+                else:
+                    break
+            else:
+                print(ts.f(ERROR_COLOR, "Could not parse effort, exiting..."))
                 click.Context.exit(1)
-            elif task_status == done_str:
-                print("You can't make a new task as done. Stop wasting time.")
+
+
+            for _ in range(MAX_ENTRY_RETRIES):
+                task_status = int(input(
+                    f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: "))
+                if task_status not in status_primitives:
+                    print(ts.f(ERROR_COLOR, f"'{task_status}' is not a valid status. Choose from {status_primitives}"))
+                    continue
+                elif task_status == done_str:
+                    print(ts.f(ERROR_COLOR, "You can't make a new task as done. Stop wasting time."))
+                    click.Context.exit(1)
+                else:
+                    break
+            else:
+                print(ts.f(ERROR_COLOR, "Could not parse status, exiting..."))
                 click.Context.exit(1)
+
+            for _ in range(MAX_ENTRY_RETRIES):
+                task_due = input(
+                    f"Enter the tasks due date, either as a YYYY-MM-DD date or as the number of days due from now \n(press enter for the max due date, 365 days from now): "
+                )
+                if not task_due:
+                    task_due_date = max_due_date
+                    break
+                else:
+                    task_due_date = None
+                    try:
+                        task_due_int = int(task_due)
+                        task_due_date = datetime.datetime.today() + datetime.timedelta(days=task_due_int)
+                    except ValueError:
+                        pass
+                    try:
+                        task_due_date = datetime.datetime.strptime(task_due_date, due_date_fmt)
+                    except ValueError:
+                        pass
+
+                    if not task_due_date:
+                        print(ts.f(ERROR_COLOR, f"The entry '{task_due}' could not be parsed as a date or number of days."))
+                        continue
+                task_due = task_due_date
+            else:
+                print(ts.f(ERROR_COLOR, "Could not parse due date, exiting..."))
+                click.Context.exit(1)
+
+            if ask_for_yn("Is the task recurring?"):
+                for _ in range(MAX_ENTRY_RETRIES):
+                    n_days_recurring = int(input(
+                        "Enter the number of days after the due date that this task should recur: "
+                    ))
+                    if task_eff not in effort_primitives:
+                        print(ts.f(ERROR_COLOR,
+                                   f"'{n_days_recurring}' is not a valid recurrence interval. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}"))
+                        continue
+                    else:
+                        break
+            else:
+                task_flags = ["n"]
+
+
             edit_content = ask_for_yn("Edit the task's content?", action=None)
 
             # create new task
             t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
             footer_txt = f"Task {t.id}: '{t.name}' created with priority {t.priority} and status '{t.status}'."
             print("\n" + "-" * len(footer_txt) + "\n" + footer_txt)
+
         else:
             pmap = ctx.obj["PMAP"]
 
             try:
                 int(task_id[1:])
             except ValueError:
-                print(style.format(ERROR_COLOR, f"Task {task_id} not parsed. Task ids are a letter followed by a number. For example, 'a1'."))
+                print(ts.f(ERROR_COLOR, f"Task {task_id} not parsed. Task ids are a letter followed by a number. For example, 'a1'."))
                 click.Context.exit(1)
             project_id = task_id[0]
             check_project_id_exists(pmap, project_id)
@@ -596,7 +667,7 @@ def task(ctx, task_id):
             check_task_id_exists(p, task_id)
             ctx.obj["TASK"] = p.task_map[task_id]
             if task_id is not None and ctx.invoked_subcommand is None:
-                print("Nothing to do! Invoke a subcommand. Do 'dion task --help' for help.")
+                print("Nothing to do! Invoke a subcommand. Do 'dex task --help' for help.")
 
 
 if __name__ == '__main__':
