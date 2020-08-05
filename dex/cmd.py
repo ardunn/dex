@@ -3,7 +3,9 @@ import os
 import click
 import treelib
 
+from dex.executor import Executor
 from dex.util import TerminalStyle
+from dex.constants import status_primitives, hold_str, done_str, abandoned_str, ip_str, todo_str
 
 '''
 # Top level commands
@@ -74,8 +76,9 @@ dex task [dexid] aban <<alias for abandon>>
 # Constants
 PROJECT_SUBCOMMAND_LIST = ["work", "view", "prio", "rename", "rm"]
 TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
-CURRENT_ROOT_PATH_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.path")
-CURRENT_ROOT_IGNORE_LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "current_root.ignore")
+CONTAINER_DIR = os.path.dirname(os.path.abspath(__file__))
+CURRENT_ROOT_PATH_LOC = os.path.join(CONTAINER_DIR, "current_root.path")
+CURRENT_ROOT_IGNORE_LOC = os.path.join(CONTAINER_DIR, "current_root.ignore")
 
 STATUS_COLORMAP = {"todo": "b", "ip": "y", "hold": "m", "done": "g", "abandoned": "k"}
 SUCCESS_COLOR = "c"
@@ -83,9 +86,20 @@ ERROR_COLOR = "r"
 ts = TerminalStyle()
 
 
-
 # Utility functions for getting the current root path
-#############################################
+########################################################################################################################
+def checks_root_path_loc():
+    if os.path.exists(CURRENT_ROOT_PATH_LOC):
+        # print("debug: current root path loc exists!")
+        with open(CURRENT_ROOT_PATH_LOC, "r") as f:
+            path = f.read()
+            if os.path.exists(path):
+                # print("debug: current root path exists!")
+                return None
+    print("No current projects. Use 'dion init' to start your set of projects or move to a new one.")
+    click.Context.exit(1)
+
+
 def get_current_root_path():
     with open(CURRENT_ROOT_PATH_LOC, "r") as f:
         p = f.read()
@@ -103,28 +117,22 @@ def write_ignore(ignore):
             f.write(i + "\n")
 
 
-def checks_root_path_loc():
-    if os.path.exists(CURRENT_ROOT_PATH_LOC):
-        # print("debug: current root path loc exists!")
-        with open(CURRENT_ROOT_PATH_LOC, "r") as f:
-            path = f.read()
-            if os.path.exists(path):
-                # print("debug: current root path exists!")
-                return None
-    print("No current projects. Use 'dion init' to start your set of projects or move to a new one.")
-    click.Context.exit(1)
+def get_current_ignore():
+    with open(CURRENT_ROOT_IGNORE_LOC, "r") as f:
+        i = f.readlines()
+    return [folder.replace("\n", "") for folder in i]
 
 
+# Utility functions for common CLI tasks
+########################################################################################################################
 def get_project_header_str(project):
-    id_str = ts.format("w", ts.format("u", f"Project {project.id}: {project.name}")) + " ["
+    id_str = ts.f("w", ts.f("u", f"Project {project.id}: {project.name}")) + " ["
     for sp in status_primitives:
         sp_str = "held" if sp == hold_str else sp
-        id_str += ts.format(STATUS_COLORMAP[sp], f"{len(project.tasks[sp])} {sp_str}") + ", "
+        id_str += ts.f(STATUS_COLORMAP[sp], f"{len(project.tasks[sp])} {sp_str}") + ", "
     id_str = id_str[:-2] + "]"
     return id_str
 
-
-# Utility functions for printing
 
 def print_projects(pmap, show_n_tasks=3, show_done=False):
     tree = treelib.Tree()
@@ -166,7 +174,7 @@ def ask_for_yn(prompt, action=None):
 
 
 def print_task_work_interface(task):
-    print(ts.format("u", f"Task {task.id}: {task.name}"))
+    print(ts.f("u", f"Task {task.id}: {task.name}"))
     ask_for_yn("View this task?", action=task.view)
     task.work()
     print(ts.f(SUCCESS_COLOR, f"You're now working on '{task.name}'"))
@@ -178,14 +186,13 @@ def print_task_collection(project, show_done=False, n_shown=100):
     active_statuses = ["todo", "doing", "hold", "done"]
     if not show_done:
         active_statuses.remove("done")
-
     id_str = get_project_header_str(project)
     tree = treelib.Tree()
     tree.create_node(id_str, "header")
     nid = 0
     for sp in active_statuses:
         color = STATUS_COLORMAP[sp]
-        tree.create_node(ts.format(color, sp.capitalize()), sp, parent="header")
+        tree.create_node(ts.f(color, sp.capitalize()), sp, parent="header")
         statused_tasks = task_collection[sp]
         if not statused_tasks:
             nid += 1
@@ -200,6 +207,8 @@ def print_task_collection(project, show_done=False, n_shown=100):
     tree.show(key=lambda node: node.identifier)
 
 
+# Utility functions for checking tasks and projects
+########################################################################################################################
 def check_project_id_exists(pmap, project_id):
     if project_id not in pmap.keys():
         print(ts.f(ERROR_COLOR, f"Project ID {project_id} invalid. Select from the following projects:"))
@@ -218,3 +227,20 @@ def check_input_not_empty(input_str):
     if input_str is None or not input_str.strip():
         print(ts.f(ERROR_COLOR, "Empty or space-only names not allowed."))
         click.Context.exit(1)
+
+
+# Global context level commands ########################################################################################
+# dex
+@click.group(invoke_without_command=False)
+@click.pass_context
+def cli(ctx):
+    ctx.ensure_object(dict)
+    if ctx.invoked_subcommand != "init":
+        checks_root_path_loc()
+        e = Executor(path=get_current_root_path(), ignored_dirs=get_current_ignore())
+        ctx.obj["EXECUTOR"] = e
+        ctx.obj["PMAP"] = e.project_map
+
+
+if __name__ == '__main__':
+    cli(obj={})
