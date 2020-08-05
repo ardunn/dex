@@ -5,7 +5,7 @@ import unittest
 import datetime
 
 from dex.executor import Executor
-from dex.constants import executor_fname, default_executor
+from dex.constants import executor_fname, default_executor, status_primitives
 
 
 class TestExecutor(unittest.TestCase):
@@ -34,6 +34,10 @@ class TestExecutor(unittest.TestCase):
 
     def test_task_prios(self):
         executor = Executor(self.test_dir, ignored_dirs=["ignored_directory"])
+        tasks_conglomerated = executor.get_tasks(only_today=False)
+        for key in status_primitives:
+            self.assertTrue(key in tasks_conglomerated)
+
         tasks = executor.get_n_highest_priority_tasks(100)
         self.assertEqual(len(tasks), 2)
         tasks = executor.get_n_highest_priority_tasks(100, include_inactive=True)
