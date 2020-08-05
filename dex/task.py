@@ -32,6 +32,7 @@ class Task:
                 For example, ["r22"] means recurring every 22 days. See constants.py for more info on available
                 and valid flags.
             edit_content (bool); If True, will open the $EDITOR on the <path> specified.
+            edit_content (bool); If True, will open the $EDITOR on the <path> specified.
         """
         path = os.path.abspath(path)
 
@@ -418,7 +419,8 @@ def extract_dexcode_from_content(content: str) -> str:
         dexcode (str): The dexcode
 
     """
-    id_line = content.split("\n")[-1]
+    split = [c for c in content.split("\n") if c]
+    id_line = split[-1]
     if dexcode_header in id_line:
         if all([delim in id_line for delim in (ddr, ddl, ddm)]):
             dexcode = id_line[id_line.find(ddl):id_line.find(ddr) + len(ddr)]

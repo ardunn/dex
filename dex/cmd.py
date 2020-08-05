@@ -144,11 +144,16 @@ def get_project_header_str(project):
     return id_str
 
 
-def get_task_string(t):
+def get_task_string(t, colorize_status=False):
     recurrence, recurring_n_days = t.recurrence
+
+    if colorize_status:
+        status_str = ts.f(STATUS_COLORMAP[t.status], t.status)
+    else:
+        status_str = t.status
     recurrence_str = f"recurs in {recurring_n_days} days" if recurrence else "non-recurring"
-    return f"{t.id} ({t.status}) - {t.name} [due in {t.days_until_due} days, " \
-           f"{t.importance} importance, {t.effort} effort, {recurrence_str}"
+    return f"{t.dexid} ({status_str}) - {t.name} [due in {t.days_till_due} days, " \
+           f"{t.importance} importance, {t.effort} effort, {recurrence_str}]"
 
 
 def print_projects(pmap, show_n_tasks=3, show_inactive=False):
@@ -566,7 +571,7 @@ def task(ctx, task_id):
 
             for _ in range(MAX_ENTRY_RETRIES):
                 task_imp = int(input(
-                    f"Enter the task's importance ({importance_primitives[0]} - {importance_primitives[-1]} (higher is more important): "))
+                    f"Enter the task's importance ({importance_primitives[0]} - {importance_primitives[-1]}, higher is more important): "))
                 if task_imp not in importance_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_imp}' is not a valid importance value. Choose from {importance_primitives}"))
                     continue
@@ -578,7 +583,7 @@ def task(ctx, task_id):
 
             for _ in range(MAX_ENTRY_RETRIES):
                 task_eff = int(input(
-                    f"Enter the how much effort the task will take ({effort_primitives[0]} - {effort_primitives[-1]} (higher is more effort): "))
+                    f"Enter the how much effort the task will take ({effort_primitives[0]} - {effort_primitives[-1]}, higher is more effort): "))
                 if task_eff not in effort_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_eff}' is not a valid effort value. Choose from {effort_primitives}"))
                     continue
@@ -590,8 +595,10 @@ def task(ctx, task_id):
 
 
             for _ in range(MAX_ENTRY_RETRIES):
-                task_status = int(input(
-                    f"Enter the task's status (one of {status_primitives}, or hit enter to mark as {status_primitives[0]}: "))
+                task_status = input(
+                    f"Enter the task's status {status_primitives}, or hit enter to mark as {todo_str}: "
+                )
+                task_status = todo_str if not task_status else task_status
                 if task_status not in status_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_status}' is not a valid status. Choose from {status_primitives}"))
                     continue
@@ -606,27 +613,24 @@ def task(ctx, task_id):
 
             for _ in range(MAX_ENTRY_RETRIES):
                 task_due = input(
-                    f"Enter the tasks due date, either as a YYYY-MM-DD date or as the number of days due from now \n(press enter for the max due date, 365 days from now): "
+                    f"Enter the task's due date, (YYYY-MM-DD date or # days due from today) \n(press enter for the max due date, 365 days from now): "
                 )
                 if not task_due:
-                    task_due_date = max_due_date
+                    task_due = max_due_date
                     break
                 else:
                     task_due_date = None
                     try:
                         task_due_int = int(task_due)
-                        task_due_date = datetime.datetime.today() + datetime.timedelta(days=task_due_int)
+                        task_due = datetime.datetime.today() + datetime.timedelta(days=task_due_int)
+                        break
                     except ValueError:
-                        pass
-                    try:
-                        task_due_date = datetime.datetime.strptime(task_due_date, due_date_fmt)
-                    except ValueError:
-                        pass
-
-                    if not task_due_date:
-                        print(ts.f(ERROR_COLOR, f"The entry '{task_due}' could not be parsed as a date or number of days."))
-                        continue
-                task_due = task_due_date
+                        try:
+                            task_due = datetime.datetime.strptime(task_due_date, due_date_fmt)
+                            break
+                        except ValueError:
+                            print(ts.f(ERROR_COLOR, f"The entry '{task_due}' could not be parsed as a date or number of days."))
+                            continue
             else:
                 print(ts.f(ERROR_COLOR, "Could not parse due date, exiting..."))
                 click.Context.exit(1)
@@ -636,26 +640,29 @@ def task(ctx, task_id):
                     n_days_recurring = int(input(
                         "Enter the number of days after the due date that this task should recur: "
                     ))
-                    if task_eff not in effort_primitives:
+                    if n_days_recurring not in valid_recurrence_times:
                         print(ts.f(ERROR_COLOR,
                                    f"'{n_days_recurring}' is not a valid recurrence interval. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}"))
                         continue
                     else:
+                        task_flags = [f"r{n_days_recurring}"]
                         break
             else:
                 task_flags = ["n"]
 
-
             edit_content = ask_for_yn("Edit the task's content?", action=None)
 
+            print(task_name, task_eff, task_due, task_imp, task_status, task_flags, edit_content)
+
             # create new task
-            t = project.create_new_task(name=task_name, priority=task_prio, status=task_status, edit=edit_content)
-            footer_txt = f"Task {t.id}: '{t.name}' created with priority {t.priority} and status '{t.status}'."
+            t = project.create_new_task(task_name, task_eff, task_due, task_imp, task_status, task_flags, edit_content)
+            footer_txt = f"Task created: {get_task_string(t)}"
             print("\n" + "-" * len(footer_txt) + "\n" + footer_txt)
 
+        elif ctx.invoked_subcommand is None and task_id is None:
+            click.echo(ctx.get_help())
+            click.Context.exit(0)
         else:
-            pmap = ctx.obj["PMAP"]
-
             try:
                 int(task_id[1:])
             except ValueError:
@@ -665,10 +672,21 @@ def task(ctx, task_id):
             check_project_id_exists(pmap, project_id)
             p = pmap[project_id]
             check_task_id_exists(p, task_id)
-            ctx.obj["TASK"] = p.task_map[task_id]
-            if task_id is not None and ctx.invoked_subcommand is None:
-                print("Nothing to do! Invoke a subcommand. Do 'dex task --help' for help.")
+            t= p.task_map[task_id]
+            ctx.obj["TASK"] = t
 
+            # dex task [dexid] (view it)
+            if task_id is not None and ctx.invoked_subcommand is None:
+                print(get_task_string(t, colorize_status=True), "\n")
+                print(t.view())
+
+# dex task [task_id] edit
+@task.command(name="edit", help="Edit a task's content.")
+@click.pass_context
+def task_edit(ctx):
+    t = ctx.obj["TASK"]
+    t.edit()
+    print(f"Task {t.dexid}: '{t.name}' edited.")
 
 if __name__ == '__main__':
     cli(obj={})
