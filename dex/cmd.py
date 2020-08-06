@@ -143,7 +143,7 @@ def get_project_header_str(project):
     return id_str
 
 
-def get_task_string(t, colorize_status=False, id_color="x", name_color="x", attr_color="x"):
+def get_task_string(t, colorize_status=False, id_color="x", name_color="x", attr_color="x", show_details=True):
     recurrence, recurring_n_days = t.recurrence
 
     if colorize_status:
@@ -153,11 +153,14 @@ def get_task_string(t, colorize_status=False, id_color="x", name_color="x", attr
     recurrence_str = f"recurs after {recurring_n_days} days" if recurrence else "non-recurring"
     id_str = ts.f(id_color, f"{t.dexid}")
     name_str = ts.f(name_color, f"{t.name}")
-    attr_str = ts.f(attr_color, f"[due in {t.days_till_due} days, {t.importance} importance, {t.effort} effort, {recurrence_str}]")
+    if show_details:
+        attr_str = ts.f(attr_color, f"[due in {t.days_till_due} days, {t.importance} importance, {t.effort} effort, {recurrence_str}]")
+    else:
+        attr_str = ""
     return f"{id_str} ({status_str}) - {name_str} {attr_str}"
 
 
-def print_projects(pmap, show_n_tasks=3, show_inactive=False):
+def print_projects(pmap, show_n_tasks=3, show_inactive=False, **get_task_str_kwargs):
     tree = treelib.Tree()
     tree.create_node("All projects", "root")
     i = 0
@@ -168,7 +171,7 @@ def print_projects(pmap, show_n_tasks=3, show_inactive=False):
             ordered_tasks = rank_tasks(p.tasks, limit=show_n_tasks, include_inactive=show_inactive)
             if ordered_tasks:
                 for task in ordered_tasks:
-                    task_txt = get_task_string(task)
+                    task_txt = get_task_string(task, **get_task_str_kwargs)
                     tree.create_node(task_txt, i, parent=p.id)
                     i += 1
                 if len(p.tasks.all) - len(p.tasks.done + p.tasks.abandoned) > show_n_tasks:
@@ -469,19 +472,21 @@ def project_rm(ctx):
 ### Task collection options
 @click.option("--n-shown", "-n", help="Number of tasks shown (default is all tasks).", type=click.INT)
 @click.option("--all-projects", "-a", is_flag=True, help="Show tasks across all the executor's projects, not just today's.")
-@click.option("--include-inactive", is_flag=True, help="Show done and abandoned tasks.")
-
+@click.option("--include-inactive", "-v", is_flag=True, help="Show done and abandoned tasks.")
+@click.option("--hide-task-details", "-h", is_flag=True, help="show task details")
 ### Ordering options
-# @click.option("--by-project", '-p', is_flag=True, help="Organize tasks by project.")
-# @click.option("--by-importance", '-i', is_flag=True, help="Organize tasks by importance.")
-# @click.option("--by-effort", '-e', is_flag=True, help="Organize tasks by effort.")
-# @click.option("--by-due", '-d', is_flag=True, help="Organize tasks by due date.")
-# @click.option("--by-status", "-s", is_flag=True, help="Organize tasks by status.")
+@click.option("--by-project", '-p', is_flag=True, help="Organize tasks by project.")
+@click.option("--by-importance", '-i', is_flag=True, help="Organize tasks by importance.")
+@click.option("--by-effort", '-e', is_flag=True, help="Organize tasks by effort.")
+@click.option("--by-due", '-d', is_flag=True, help="Organize tasks by due date.")
+@click.option("--by-status", "-s", is_flag=True, help="Organize tasks by status.")
 @click.pass_context
-def tasks(ctx, n_shown, all_projects, include_inactive):
-    # orderings = [by_due, by_status, by_project, by_importance, by_effort]
-    # if sum(orderings) > 1:
-    #     print(ts.f("r", "Please only specify one ordering/organization option (--by-(project/importance/effort/due/status))"))
+def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_due, by_status, by_project, by_importance, by_effort):
+    orderings = [by_due, by_status, by_project, by_importance, by_effort]
+    if sum(orderings) > 1:
+        print(ts.f("r", "Please only specify one ordering/organization option (--by-(project/importance/effort/due/status))"))
+
+    show_task_details = not hide_task_details
     if n_shown is None:
         n_shown = 10000
         n_shown_str = "All"
@@ -492,27 +497,35 @@ def tasks(ctx, n_shown, all_projects, include_inactive):
 
     only_today = not all_projects
     only_today_str = f"today's projects only" if only_today else "all projects"
-    tasks_ordered = e.get_n_highest_priority_tasks(n_shown, only_today=only_today, include_inactive=include_inactive)
+    pmap = e.project_map_today if only_today else e.project_map
 
-    tree = treelib.Tree()
-    header_txt = f"{n_shown_str} tasks for {only_today_str} (ordered by computed priority)"
-    tree.create_node(ts.f("u", header_txt), "header")
-    if tasks_ordered:
-        for j, t in enumerate(tasks_ordered):
-            if j < 3:
-                color = "c"
-            elif 15 > j >= 3:
-                color = "y"
-            else:
-                color = "k"
-            task_txt = get_task_string(t, colorize_status=True, id_color=, name_color=)
-            # task_txt = ts.f(color, task_txt)
-            tree.create_node(task_txt, j, parent="header")
-        if len(tasks_ordered) > n_shown:
-            tree.create_node("...", j + 1, parent="header")
-    else:
-        tree.create_node("No tasks", parent="header")
-    tree.show(key=lambda node: node.identifier)
+    if not any(orderings):
+        tasks_ordered = e.get_n_highest_priority_tasks(n_shown, only_today=only_today, include_inactive=include_inactive)
+        tree = treelib.Tree()
+        header_txt = f"{n_shown_str} tasks for {only_today_str} (ordered by computed priority)"
+        tree.create_node(ts.f("u", header_txt), "header")
+        if tasks_ordered:
+            for j, t in enumerate(tasks_ordered):
+                if j < 3:
+                    color = "c"
+                elif 15 > j >= 3:
+                    color = "y"
+                else:
+                    color = "k"
+
+                task_txt = get_task_string(t, colorize_status=True, id_color=color, name_color=color, attr_color="x", show_details=show_task_details)
+                # task_txt = ts.f(color, task_txt)
+                tree.create_node(task_txt, j, parent="header")
+            if len(tasks_ordered) > n_shown:
+                tree.create_node("...", j + 1, parent="header")
+        else:
+            tree.create_node("No tasks", parent="header")
+        tree.show(key=lambda node: node.identifier)
+    elif by_project:
+        print_projects(pmap, show_n_tasks=n_shown, show_inactive=include_inactive, colorize_status=True, show_details = show_task_details)
+    
+
+
 
     # if not any(orderings):
     #     # order flat, by computed priority

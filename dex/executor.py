@@ -70,6 +70,20 @@ class Executor:
         """
         return {p.id: p for p in self.projects}
 
+    @property
+    def project_map_today(self):
+        """
+        Get the project id : project obj map, but only for today's projects.
+
+        Returns:
+            {str: dex.Project}: Keys are alphabetic character project ids, values are project objects
+        """
+        todays_project_ids = self.executor_week[today]
+        pmap = self.project_map
+        if todays_project_ids == executor_all_projects_key:
+            todays_project_ids = list(pmap.keys())
+        return {p.id: p for p in self.projects if p.id in todays_project_ids}
+
     def get_tasks(self, only_today: bool) -> AttrDict:
         """
         Get a task collection of tasks across more than one project.
@@ -81,14 +95,11 @@ class Executor:
             AttrDict: The task collection across
 
         """
-        todays_project_ids = self.executor_week[today]
-        pmap = self.project_map
-        if todays_project_ids == executor_all_projects_key or not only_today:
-            todays_project_ids = list(pmap.keys())
-        todays_projects = [pmap[pid] for pid in todays_project_ids]
+
+        pmap = self.project_map_today if only_today else self.project_map
         relevant_tasks = {}
         for sp in status_primitives:
-            relevant_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in todays_projects]))
+            relevant_tasks[sp] = list(itertools.chain(*[p.tasks[sp] for p in pmap.values()]))
         relevant_tasks = AttrDict(relevant_tasks)
         return relevant_tasks
 
