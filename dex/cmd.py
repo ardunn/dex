@@ -495,7 +495,7 @@ def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_du
     orderings = [by_due, by_status, by_project, by_importance, by_effort]
     if sum(orderings) > 1:
         print(ts.f("r", "Please only specify one ordering/organization option (--by-(project/importance/effort/due/status))"))
-
+        click.Context.exit(1)
     show_task_details = not hide_task_details
     if n_shown is None:
         n_shown = 10000
@@ -585,11 +585,35 @@ def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_du
                 node_id += 1
                 task_txt = get_task_string(task, colorize_status=False, show_details=show_task_details)
                 tree.create_node(task_txt, node_id, parent=subheader_id)
-
         tree.show(key=lambda node: node.identifier)
 
+    elif by_importance or by_effort:
+        # Ordering is the same for both importance and effort
+        key = "importance" if by_importance else "effort"
+        primitives = importance_primitives if by_importance else effort_primitives
 
+        tree.create_node(ts.f("u", header_txt + f" (ordered by {key})"), "header")
+        ordered_by_attr = {p: [] for p in primitives}
 
+        for task in tasks_ordered:
+            ordered_by_attr[getattr(task, key)].append(task)
+
+        primitives_colormap = {
+            1: "k",
+            2: "b",
+            3: "g",
+            4: "y",
+            5: "r"
+        }
+
+        node_id = 0
+        for p in reversed(primitives):
+            color = primitives_colormap[p]
+            for task in ordered_by_attr[p]:
+                node_id += 1
+                task_txt = get_task_string(task, colorize_status=True, id_color=color, name_color=color)
+                tree.create_node(task_txt, node_id, parent="header")
+        tree.show(key=lambda node: node.identifier)
 
 
 # dex task
