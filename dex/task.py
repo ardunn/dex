@@ -140,7 +140,8 @@ class Task:
         Returns:
             str
         """
-        return mdv.main(self.content)
+        content = "File has no content." if not self.content else self.content
+        return mdv.main(content)
 
     # File state change methods
     ###########################
@@ -260,7 +261,7 @@ class Task:
             return e * i
         else:
             # Tasks with due date past or today are given equal priority
-            d = 1 if d < 1 else d
+            d = 0.5 if d < 1 else d
             s_factor = 1.2 if s == ip_str else 1
             return i ** 2 * s_factor * e/d
 

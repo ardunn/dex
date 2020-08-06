@@ -309,22 +309,26 @@ def exec(ctx):
 
 
 
-# @cli.command(help="Get info about your projects.")
-# @click.option("--visualize", "-v", is_flag=True, help="Make a graph of current tasks.")
-# @click.pass_context
-# def info(ctx, visualize):
-#     s = ctx.obj["SCHEDULE"]
-#     print(f"The current dion working directory is {s.path}")
-#     print(f"There are currently {len(s.get_projects())} projects.")
-#     print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=False))} active tasks.")
-#     print(f"There are currently {len(s.get_n_highest_priority_tasks(n=10000, include_done=True))} total tasks, including done.")
-#
-#     if visualize:
-#         projects = s.get_projects()
-#         n_tasks_w_status = {sp: 0 for sp in status_primitives}
-#         n_tasks_w_priority = {pp: 0 for pp in priority_primitives}
-#         for p in projects:
-#             tasks = p.tasks
+@cli.command(help="Get info about your projects.")
+@click.option("--visualize", "-v", is_flag=True, help="Make a graph of current tasks.")
+@click.pass_context
+def info(ctx, visualize):
+    e = ctx.obj["EXECUTOR"]
+    print(f"The current dion working directory is '{e.path}'")
+    print(f"There are currently {len(e.projects)} projects.")
+
+    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=True, include_inactive=False))} active tasks for today's projects.")
+    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=True, include_inactive=True))} tasks for today's projects, including done and abandoned.")
+
+    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=False))} active tasks for all projects.")
+    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=True))} tasks for all projects, including done and abandoned.")
+
+    if visualize:
+        projects = s.get_projects()
+        n_tasks_w_status = {sp: 0 for sp in status_primitives}
+        n_tasks_w_priority = {pp: 0 for pp in priority_primitives}
+        for p in projects:
+            tasks = p.tasks
 #             for sp in status_primitives:
 #                 n_tasks_w_status[sp] += len(tasks[sp])
 #             for pp in priority_primitives:
