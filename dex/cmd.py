@@ -566,6 +566,30 @@ def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_du
             tree.create_node(task_txt, i, parent="header")
         tree.show(key=lambda node: node.identifier)
 
+    elif by_status:
+        tree.create_node(ts.f("u", header_txt + " (ordered by status)"), "header")
+        ordered_by_status = {sp: [] for sp in status_primitives}
+
+        # this will already be ordered by computed priortiy
+        for task in tasks_ordered:
+            ordered_by_status[task.status].append(task)
+
+        node_id = 0
+        for sp in [todo_str, ip_str, hold_str, done_str, abandoned_str]:
+            task_list = ordered_by_status[sp]
+            subheader_id = f"subheader_{sp}"
+
+            sp_str = "In progress" if sp == ip_str else sp.capitalize()
+            tree.create_node(ts.f(STATUS_COLORMAP[sp], sp_str), subheader_id, parent="header")
+            for i, task in enumerate(task_list):
+                node_id += 1
+                task_txt = get_task_string(task, colorize_status=False, show_details=show_task_details)
+                tree.create_node(task_txt, node_id, parent=subheader_id)
+
+        tree.show(key=lambda node: node.identifier)
+
+
+
 
 
 # dex task
