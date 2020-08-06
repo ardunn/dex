@@ -81,8 +81,8 @@ dex task [dexid] aban <<alias for abandon>>
 '''
 
 # Constants
-PROJECT_SUBCOMMAND_LIST = ["work", "view", "prio", "rename", "rm"]
-TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "hold", "done"]
+PROJECT_SUBCOMMAND_LIST = ["exec", "rename", "rm"]
+TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "done", "todo", "hold", "aban", "imp", "eff", "due"]
 CONTAINER_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_ROOT_PATH_LOC = os.path.join(CONTAINER_DIR, "current_root.path")
 CURRENT_ROOT_IGNORE_LOC = os.path.join(CONTAINER_DIR, "current_root.ignore")
@@ -407,7 +407,7 @@ def projects(ctx):
 
 # dex project
 # dex project new
-@cli.group(invoke_without_command=True, help="Command a single project \n(do 'dex project new' w/ no args for new project).")
+@cli.group(invoke_without_command=True, help="Command a single project \n(do 'dex project new' w/ no args for new project). Do dex project [project_id] to view a project.")
 @click.argument("project_id", nargs=1, type=click.STRING, required=False)
 @click.pass_context
 def project(ctx, project_id):
@@ -440,7 +440,7 @@ def project(ctx, project_id):
                 ctx.obj["PROJECT"] = pmap[project_id]
 
                 # view the task
-                if project_id is None:
+                if project_id is not None:
                     print_project_task_collection(pmap[project_id], show_inactive=True, n_shown=10000)
 
 
@@ -522,11 +522,11 @@ def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_du
         if tasks_ordered:
             for j, t in enumerate(tasks_ordered):
                 if j < 3:
-                    color = "c"
+                    color = "r"
                 elif 15 > j >= 3:
                     color = "y"
                 else:
-                    color = "k"
+                    color = "g"
 
                 task_txt = get_task_string(t, colorize_status=True, id_color=color, name_color=color, attr_color="x", show_details=show_task_details)
                 # task_txt = ts.f(color, task_txt)
@@ -798,9 +798,13 @@ def task_rename(ctx):
 @click.option("--effort", "-e", help=f"Set a task's effort {effort_primitives}", type=click.INT)
 @click.option("--status", "-s", help=f"Set a task's status {status_primitives}", type=click.STRING)
 @click.option("--due", "-d", help=f"Set a task's due date (YYYY-MM-DD or # days until due")
-@click.option("--recurring", "-r", help="Change or enable task recurrence (1-365 day intervals). Enter the number of days until it recurs (0 to make the task not recurring", type=click.INT)
+@click.option("--recurring", "-r", help="Change or enable task recurrence (1-365 day intervals). Enter the number of days until it recurs (0 to make the task not recurring)", type=click.INT)
 @click.pass_context
 def task_set(ctx, importance, effort, status, due, recurring):
+    _task_set(ctx, importance, effort, status, due, recurring)
+
+
+def _task_set(ctx, importance, effort, status, due, recurring):
     has_error = False
     if importance is not None and int(importance) not in importance_primitives:
         print(ts.f(ERROR_COLOR, f"{importance} not a valid importance value {importance_primitives}"))
@@ -850,12 +854,71 @@ def task_set(ctx, importance, effort, status, due, recurring):
                 t.rm_flag(f)
 
             # if r is 0, all the recurrences have been removed, so only do stuff if r != 0
-            if recurring == 0:
+            if recurring == 0 and no_flags not in t.flags:
                 t.add_flag(no_flags)
             if recurring != 0:
                 t.add_flag(f"r{recurring}")
         success_text = ts.f(SUCCESS_COLOR, f"Task {t.dexid} successfully updated to:")
         print(f"{success_text}\n{get_task_string(t)}\n")
+
+
+# dex task [dexid] done
+@task.command(name="done", help="Mark a task as done. Shorthand for the 'set' subcommand")
+@click.pass_context
+def task_done(ctx):
+    _task_set(ctx, None, None, done_str, None, None)
+
+# dex task [dexid] exec
+@task.command(name="exec", help="Force work on this task (change status to in progress). Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.pass_context
+def task_exec(ctx):
+    _task_set(ctx, None, None, ip_str, None, None)
+
+
+# dex task [dexid] todo
+@task.command(name="todo", help="Mark a task as todo. Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.pass_context
+def task_todo(ctx):
+    _task_set(ctx, None, None, todo_str, None, None)
+
+
+# dex task [dexid] aban
+@task.command(name="aban", help="Mark a task as abandoned. Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.pass_context
+def task_aban(ctx):
+    _task_set(ctx, None, None, abandoned_str, None, None)
+
+
+# dex task [dexid] hold
+@task.command(name="hold", help="Hold a task (keep active but suspend till further notice). Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.pass_context
+def task_hold(ctx):
+    _task_set(ctx, None, None, hold_str, None, None)
+
+
+# dex task [dexid] imp [val]
+@task.command(name="imp", help="Change a task's importance. Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.argument("importance", nargs=1, type=click.INT)
+@click.pass_context
+def task_imp(ctx, importance):
+    _task_set(ctx, importance, None, None, None, None)
+
+
+# dex task [dexid] eff [val]
+@task.command(name="eff", help="Change a task's effort. Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.argument("effort", nargs=1, type=click.INT)
+@click.pass_context
+def task_eff(ctx, effort):
+    _task_set(ctx, None, effort, None, None, None)
+
+
+# dex task [dexid] due [val]
+@task.command(name="due", help="Change a task's due date. Shorthand for the 'set' subcommand. See 'dex task set' for more info on valid arguments.")
+@click.argument("due", nargs=1)
+@click.option("--recurring", "-r", help="Change or enable task recurrence (1-365 day intervals). Enter the number of days until it recurs (0 to make the task not recurring)", type=click.INT)
+@click.pass_context
+def task_due(ctx, due, recurring):
+    _task_set(ctx, None, None, None, due, recurring)
 
 
 if __name__ == '__main__':
