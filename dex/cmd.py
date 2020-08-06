@@ -282,7 +282,7 @@ def cli(ctx):
 # dex init
 @cli.command(help="Initialize a new set of projects. You can only have one active.")
 @click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
-@click.option("--ignore", "-i", multiple=True)
+@click.option("--ignore", "-i", multiple=True, help="Directories to ignore (e.g., ./assets")
 def init(path, ignore):
     if not ignore:
         ignore = tuple()

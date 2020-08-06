@@ -10,7 +10,7 @@ from dex.note import Note
 from dex.task import Task
 from dex.constants import abandoned_str, done_str, inactive_subdir, status_primitives, tasks_subdir, notes_subdir, \
     valid_project_ids, task_extension, note_extension
-from dex.exceptions import DexException, FileOverwriteError
+from dex.exceptions import DexException, FileOverwriteError, DexcodeException
 
 
 class Project:
@@ -77,8 +77,11 @@ class Project:
             for ft in os.listdir(taskdir):
                 f_full = os.path.abspath(os.path.join(taskdir, ft))
                 if f_full.endswith(task_extension):
-                    t = Task.from_file(f_full)
-                    tasks.append(t)
+                    try:
+                        t = Task.from_file(f_full)
+                        tasks.append(t)
+                    except DexcodeException:
+                        warnings.warn(f"File {f_full} has no dexcode. Please remove this file or make it into a task.")
 
         for task in tasks:
             project_id = task.dexid[0]
