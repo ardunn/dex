@@ -180,7 +180,7 @@ class TestTask(unittest.TestCase):
         test_file = os.path.join(self.test_dir, "recurring task.md")
         t = Task.from_file(test_file)
         self.assertListEqual([t.hold, t.done, t.ip, t.todo, t.abandoned], [False, False, True, False, False])
-        dtd = (t.due - datetime.datetime.now()).days
+        dtd = (t.due - datetime.datetime.now()).days + 1
         self.assertEqual(dtd, t.days_till_due)
 
     def test_recurrence(self):
