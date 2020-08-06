@@ -282,11 +282,12 @@ def cli(ctx):
 # dex init
 @cli.command(help="Initialize a new set of projects. You can only have one active.")
 @click.argument('path', nargs=1, type=click.Path(file_okay=False, dir_okay=True, writable=True, readable=True))
-@click.option("--ignore", "-i", multiple=True, help="Directories to ignore (e.g., ./assets")
+@click.option("--ignore", "-i", multiple=True, help="Directories to ignore (e.g., ./assets)")
 def init(path, ignore):
     if not ignore:
         ignore = tuple()
     descriptor = "existing" if os.path.exists(path) else "new"
+    print(ignore)
     s = Executor(path=path, ignored_dirs=ignore)
     write_path_as_current_root_path(s.path)
     write_ignore(ignore)
@@ -646,8 +647,13 @@ def task(ctx, task_id):
             task_due, task_imp, task_eff, task_status, task_flags = None, None, None, None, None
 
             for _ in range(MAX_ENTRY_RETRIES):
-                task_imp = int(input(
-                    f"Enter the task's importance ({importance_primitives[0]} - {importance_primitives[-1]}, higher is more important): "))
+                task_imp = input(
+                    f"Enter the task's importance ({importance_primitives[0]} - {importance_primitives[-1]}, higher is more important): ")
+                try:
+                    task_imp = int(task_imp)
+                except ValueError:
+                    print(f"Could not convert '{task_imp}' to integer importance. Choose from {importance_primitives}")
+                    continue
                 if task_imp not in importance_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_imp}' is not a valid importance value. Choose from {importance_primitives}"))
                     continue
@@ -658,8 +664,13 @@ def task(ctx, task_id):
                 click.Context.exit(1)
 
             for _ in range(MAX_ENTRY_RETRIES):
-                task_eff = int(input(
-                    f"Enter the how much effort the task will take ({effort_primitives[0]} - {effort_primitives[-1]}, higher is more effort): "))
+                task_eff = input(
+                    f"Enter the how much effort the task will take ({effort_primitives[0]} - {effort_primitives[-1]}, higher is more effort): ")
+                try:
+                    task_eff = int(task_eff)
+                except ValueError:
+                    print(f"Could not convert '{task_eff}' to integer effort. Choose from {effort_primitives}")
+                    continue
                 if task_eff not in effort_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_eff}' is not a valid effort value. Choose from {effort_primitives}"))
                     continue
@@ -711,9 +722,15 @@ def task(ctx, task_id):
 
             if ask_for_yn("Is the task recurring?"):
                 for _ in range(MAX_ENTRY_RETRIES):
-                    n_days_recurring = int(input(
+                    n_days_recurring = input(
                         "Enter the number of days after the due date that this task should recur: "
-                    ))
+                    )
+                    try:
+                        n_days_recurring = int(n_days_recurring)
+                    except ValueError:
+                        print(
+                            f"Could not convert '{n_days_recurring}' to integer days recurring. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}")
+                        break
                     if n_days_recurring not in valid_recurrence_times:
                         print(ts.f(ERROR_COLOR,
                                    f"'{n_days_recurring}' is not a valid recurrence interval. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}"))
