@@ -217,29 +217,31 @@ def print_task_work_interface(task):
     print(ts.f("y", "Now get to work!"))
 
 
-def print_task_collection(project, show_done=False, n_shown=100):
+def print_project_task_collection(project, show_inactive=False, n_shown=10000):
     task_collection = project.tasks
-    active_statuses = ["todo", "doing", "hold", "done"]
-    if not show_done:
-        active_statuses.remove("done")
+    active_statuses = [todo_str, ip_str, hold_str]
+    if show_inactive:
+        active_statuses += [abandoned_str, done_str]
     id_str = get_project_header_str(project)
     tree = treelib.Tree()
     tree.create_node(id_str, "header")
     nid = 0
     for sp in active_statuses:
         color = STATUS_COLORMAP[sp]
-        tree.create_node(ts.f(color, sp.capitalize()), sp, parent="header")
+        sp_str = "In progress" if sp == ip_str else sp.capitalize()
+        tree.create_node(ts.f(color, sp_str), sp, parent="header")
         statused_tasks = task_collection[sp]
-        if not statused_tasks:
-            nid += 1
-            tree.create_node("No tasks.", nid, parent=sp)
-            continue
-        for i, t in enumerate(statused_tasks):
-            nid += 1
-            task_txt = f"{t.id} - {t.name} (priority {t.priority})"
-            tree.create_node(ts.f(color, task_txt), nid, parent=sp)
-            if i >= n_shown:
-                break
+        if n_shown:
+            if not statused_tasks:
+                nid += 1
+                tree.create_node("No tasks.", nid, parent=sp)
+                continue
+            for i, t in enumerate(statused_tasks):
+                nid += 1
+                task_txt = get_task_string(t, colorize_status=True)
+                tree.create_node(ts.f(color, task_txt), nid, parent=sp)
+                if i >= n_shown:
+                    break
     tree.show(key=lambda node: node.identifier)
 
 
@@ -248,14 +250,14 @@ def print_task_collection(project, show_done=False, n_shown=100):
 def check_project_id_exists(pmap, project_id):
     if project_id not in pmap.keys():
         print(ts.f(ERROR_COLOR, f"Project ID {project_id} invalid. Select from the following projects:"))
-        print_projects(pmap, show_n_tasks=0)
+        print_projects(pmap, show_n_tasks=0, show_inactive=False)
         click.Context.exit(1)
 
 
 def check_task_id_exists(project, tid):
     if tid not in project.task_map.keys():
         print(ts.f(ERROR_COLOR, f"Task ID {tid} invalid. Select from the following tasks in project '{project.name}':"))
-        print_task_collection(project)
+        print_project_task_collection(project,show_inactive=True)
         click.Context.exit(1)
 
 
@@ -439,7 +441,7 @@ def project(ctx, project_id):
 
                 # view the task
                 if project_id is None:
-                    print_task_collection(pmap[project_id], show_done=True, n_shown=10000)
+                    print_project_task_collection(pmap[project_id], show_inactive=True, n_shown=10000)
 
 
 # dex project [project_id] exec
@@ -652,7 +654,7 @@ def task(ctx, task_id):
                 try:
                     task_imp = int(task_imp)
                 except ValueError:
-                    print(f"Could not convert '{task_imp}' to integer importance. Choose from {importance_primitives}")
+                    print(ts.f(ERROR_COLOR, f"Could not convert '{task_imp}' to integer importance. Choose from {importance_primitives}"))
                     continue
                 if task_imp not in importance_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_imp}' is not a valid importance value. Choose from {importance_primitives}"))
@@ -669,7 +671,7 @@ def task(ctx, task_id):
                 try:
                     task_eff = int(task_eff)
                 except ValueError:
-                    print(f"Could not convert '{task_eff}' to integer effort. Choose from {effort_primitives}")
+                    print(ts.f(ERROR_COLOR, f"Could not convert '{task_eff}' to integer effort. Choose from {effort_primitives}"))
                     continue
                 if task_eff not in effort_primitives:
                     print(ts.f(ERROR_COLOR, f"'{task_eff}' is not a valid effort value. Choose from {effort_primitives}"))
@@ -728,8 +730,8 @@ def task(ctx, task_id):
                     try:
                         n_days_recurring = int(n_days_recurring)
                     except ValueError:
-                        print(
-                            f"Could not convert '{n_days_recurring}' to integer days recurring. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}")
+                        print(ts.f(ERROR_COLOR,
+                            f"Could not convert '{n_days_recurring}' to integer days recurring. Choose a number of days between {valid_recurrence_times[0]} - {valid_recurrence_times[-1]}"))
                         break
                     if n_days_recurring not in valid_recurrence_times:
                         print(ts.f(ERROR_COLOR,
@@ -827,8 +829,6 @@ def task_set(ctx, importance, effort, status, due, recurring):
         if recurring not in valid_recurrence_times and recurring != 0:
             print(ts.f(ERROR_COLOR, f"{recurring} not a valid recurrence time."))
             has_error = True
-
-    print(importance, effort, status, due, recurring)
 
     if has_error:
         print(ts.f(ERROR_COLOR, f"Errors encountered during argument parsing. Task not updated. See `dex task [dexid] set for more information."))

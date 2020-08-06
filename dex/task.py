@@ -266,7 +266,7 @@ class Task:
 
     @property
     def days_till_due(self) -> int:
-        d = (self.due - datetime.datetime.now()).days
+        d = (self.due - datetime.datetime.today()).days + 1
         return d
 
     @property
