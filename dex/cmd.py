@@ -143,7 +143,7 @@ def get_project_header_str(project):
     return id_str
 
 
-def get_task_string(t, colorize_status=False):
+def get_task_string(t, colorize_status=False, id_color="x", name_color="x", attr_color="x"):
     recurrence, recurring_n_days = t.recurrence
 
     if colorize_status:
@@ -151,8 +151,10 @@ def get_task_string(t, colorize_status=False):
     else:
         status_str = t.status
     recurrence_str = f"recurs after {recurring_n_days} days" if recurrence else "non-recurring"
-    return f"{t.dexid} ({status_str}) - {t.name} [due in {t.days_till_due} days, " \
-           f"{t.importance} importance, {t.effort} effort, {recurrence_str}]"
+    id_str = ts.f(id_color, f"{t.dexid}")
+    name_str = ts.f(name_color, f"{t.name}")
+    attr_str = ts.f(attr_color, f"[due in {t.days_till_due} days, {t.importance} importance, {t.effort} effort, {recurrence_str}]")
+    return f"{id_str} ({status_str}) - {name_str} {attr_str}"
 
 
 def print_projects(pmap, show_n_tasks=3, show_inactive=False):
@@ -497,7 +499,14 @@ def tasks(ctx, n_shown, all_projects, include_inactive):
     tree.create_node(ts.f("u", header_txt), "header")
     if tasks_ordered:
         for j, t in enumerate(tasks_ordered):
-            task_txt = get_task_string(t)
+            if j < 3:
+                color = "c"
+            elif 15 > j >= 3:
+                color = "y"
+            else:
+                color = "k"
+            task_txt = get_task_string(t, colorize_status=True, id_color=, name_color=)
+            # task_txt = ts.f(color, task_txt)
             tree.create_node(task_txt, j, parent="header")
         if len(tasks_ordered) > n_shown:
             tree.create_node("...", j + 1, parent="header")
@@ -648,9 +657,6 @@ def task(ctx, task_id):
                 task_flags = ["n"]
 
             edit_content = ask_for_yn("Edit the task's content?", action=None)
-
-            print(task_name, task_eff, task_due, task_imp, task_status, task_flags, edit_content)
-
             # create new task
             t = project.create_new_task(task_name, task_eff, task_due, task_imp, task_status, task_flags, edit_content)
             footer_txt = f"Task created: {get_task_string(t)}"
@@ -737,6 +743,8 @@ def task_set(ctx, importance, effort, status, due, recurring):
             print(ts.f(ERROR_COLOR, f"{recurring} not a valid recurrence time."))
             has_error = True
 
+    print(importance, effort, status, due, recurring)
+
     if has_error:
         print(ts.f(ERROR_COLOR, f"Errors encountered during argument parsing. Task not updated. See `dex task [dexid] set for more information."))
         click.Context.exit(1)
@@ -748,6 +756,9 @@ def task_set(ctx, importance, effort, status, due, recurring):
             t.set_effort(effort)
         if due is not None:
             t.set_due(task_due)
+        if status is not None:
+            print(f"Changing status to {status}")
+            t.set_status(status)
         if recurring is not None:
             recurring_flags = [f for f in t.flags if recurring_flag in f]
             for f in recurring_flags:

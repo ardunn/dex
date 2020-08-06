@@ -420,6 +420,8 @@ def extract_dexcode_from_content(content: str) -> str:
 
     """
     split = [c for c in content.split("\n") if c]
+    if not split:
+        raise DexcodeException("Empty file has no dexcode.")
     id_line = split[-1]
     if dexcode_header in id_line:
         if all([delim in id_line for delim in (ddr, ddl, ddm)]):
