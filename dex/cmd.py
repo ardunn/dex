@@ -11,8 +11,7 @@ from dex.executor import Executor
 from dex.logic import rank_tasks
 from dex.util import TerminalStyle, initiate_editor, AttrDict
 from dex.constants import status_primitives, hold_str, done_str, abandoned_str, ip_str, todo_str, \
-    executor_all_projects_key, valid_project_ids, importance_primitives, effort_primitives, max_due_date, due_date_fmt
-from dex.constants import today_in_executor_format, valid_recurrence_times
+    executor_all_projects_key, valid_project_ids, importance_primitives, effort_primitives, max_due_date, due_date_fmt, today_in_executor_format, valid_recurrence_times, recurring_flag, no_flags
 
 '''
 # Top level commands
@@ -151,7 +150,7 @@ def get_task_string(t, colorize_status=False):
         status_str = ts.f(STATUS_COLORMAP[t.status], t.status)
     else:
         status_str = t.status
-    recurrence_str = f"recurs in {recurring_n_days} days" if recurrence else "non-recurring"
+    recurrence_str = f"recurs after {recurring_n_days} days" if recurrence else "non-recurring"
     return f"{t.dexid} ({status_str}) - {t.name} [due in {t.days_till_due} days, " \
            f"{t.importance} importance, {t.effort} effort, {recurrence_str}]"
 
@@ -196,9 +195,9 @@ def ask_for_yn(prompt, action=None):
 
 
 def print_task_work_interface(task):
-    print(ts.f("u", f"Task {task.id}: {task.name}"))
+    print(ts.f("u", f"Task {get_task_string(task)}"))
     ask_for_yn("View this task?", action=task.view)
-    task.work()
+    task.set_status(ip_str)
     print(ts.f(SUCCESS_COLOR, f"You're now working on '{task.name}'"))
     print(ts.f("y", "Now get to work!"))
 
@@ -593,7 +592,6 @@ def task(ctx, task_id):
                 print(ts.f(ERROR_COLOR, "Could not parse effort, exiting..."))
                 click.Context.exit(1)
 
-
             for _ in range(MAX_ENTRY_RETRIES):
                 task_status = input(
                     f"Enter the task's status {status_primitives}, or hit enter to mark as {todo_str}: "
@@ -619,14 +617,13 @@ def task(ctx, task_id):
                     task_due = max_due_date
                     break
                 else:
-                    task_due_date = None
                     try:
                         task_due_int = int(task_due)
                         task_due = datetime.datetime.today() + datetime.timedelta(days=task_due_int)
                         break
                     except ValueError:
                         try:
-                            task_due = datetime.datetime.strptime(task_due_date, due_date_fmt)
+                            task_due = datetime.datetime.strptime(task_due, due_date_fmt)
                             break
                         except ValueError:
                             print(ts.f(ERROR_COLOR, f"The entry '{task_due}' could not be parsed as a date or number of days."))
@@ -680,13 +677,90 @@ def task(ctx, task_id):
                 print(get_task_string(t, colorize_status=True), "\n")
                 print(t.view())
 
-# dex task [task_id] edit
+# dex task [dexid] edit
 @task.command(name="edit", help="Edit a task's content.")
 @click.pass_context
 def task_edit(ctx):
     t = ctx.obj["TASK"]
     t.edit()
     print(f"Task {t.dexid}: '{t.name}' edited.")
+
+
+# dex task [dexid] rename
+@task.command(name="rename", help="Rename a task.")
+@click.pass_context
+def task_rename(ctx):
+    t = ctx.obj["TASK"]
+    old_name = copy.deepcopy(t.name)
+    print(f"Old name: {old_name}")
+    new_name = input("New name: ")
+    check_input_not_empty(new_name)
+    t.rename(new_name)
+    print(f"Task {t.dexid} renamed from '{old_name}' to '{t.name}'.")
+
+
+# dex task [dexid] set [args]
+@task.command(name="set", help="Change a task's importance, effort, status, and/or due date and recurrence.")
+@click.option("--importance", "-i", help=f"Set a task's importance {importance_primitives}", type=click.INT)
+@click.option("--effort", "-e", help=f"Set a task's effort {effort_primitives}", type=click.INT)
+@click.option("--status", "-s", help=f"Set a task's status {status_primitives}", type=click.STRING)
+@click.option("--due", "-d", help=f"Set a task's due date (YYYY-MM-DD or # days until due")
+@click.option("--recurring", "-r", help="Change or enable task recurrence (1-365 day intervals). Enter the number of days until it recurs (0 to make the task not recurring", type=click.INT)
+@click.pass_context
+def task_set(ctx, importance, effort, status, due, recurring):
+    has_error = False
+    if importance is not None and int(importance) not in importance_primitives:
+        print(ts.f(ERROR_COLOR, f"{importance} not a valid importance value {importance_primitives}"))
+        has_error = True
+    if effort is not None and int(effort) not in effort_primitives:
+        print(ts.f(ERROR_COLOR, f"{effort} not a valid effort value {effort_primitives}"))
+        has_error = True
+    if status is not None and status not in status_primitives:
+        print(ts.f(ERROR_COLOR, f"{status} not a valid status {status_primitives}"))
+        has_error = True
+
+    task_due = None
+    if due is not None:
+        try:
+            task_due_int = int(due)
+            task_due = datetime.datetime.today() + datetime.timedelta(days=task_due_int)
+        except ValueError:
+            try:
+                task_due = datetime.datetime.strptime(due, due_date_fmt)
+            except ValueError:
+                print(ts.f(ERROR_COLOR, f"The entry '{due}' could not be parsed as a date or number of days."))
+                has_error = True
+
+    if recurring is not None:
+        recurring = int(recurring)
+        if recurring not in valid_recurrence_times and recurring != 0:
+            print(ts.f(ERROR_COLOR, f"{recurring} not a valid recurrence time."))
+            has_error = True
+
+    if has_error:
+        print(ts.f(ERROR_COLOR, f"Errors encountered during argument parsing. Task not updated. See `dex task [dexid] set for more information."))
+        click.Context.exit(1)
+    else:
+        t = ctx.obj["TASK"]
+        if importance is not None:
+            t.set_importance(importance)
+        if effort is not None:
+            t.set_effort(effort)
+        if due is not None:
+            t.set_due(task_due)
+        if recurring is not None:
+            recurring_flags = [f for f in t.flags if recurring_flag in f]
+            for f in recurring_flags:
+                t.rm_flag(f)
+
+            # if r is 0, all the recurrences have been removed, so only do stuff if r != 0
+            if recurring == 0:
+                t.add_flag(no_flags)
+            if recurring != 0:
+                t.add_flag(f"r{recurring}")
+        success_text = ts.f(SUCCESS_COLOR, f"Task {t.dexid} successfully updated to:")
+        print(f"{success_text}\n{get_task_string(t)}\n")
+
 
 if __name__ == '__main__':
     cli(obj={})

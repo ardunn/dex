@@ -26,7 +26,7 @@ status_primitives_ints = {i: s for i, s in enumerate(status_primitives)}
 status_primitives_ints_inverted = {v: k for k, v in status_primitives_ints.items()}
 
 dexcode_delimiter_flag = "&"
-no_flags, recurring_flag = flags_primitives = ["r", "n"]
+recurring_flag, no_flags = flags_primitives = ["r", "n"]
 
 tasks_subdir = "tasks"
 notes_subdir = "notes"
