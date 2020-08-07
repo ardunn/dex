@@ -580,7 +580,6 @@ def project_rm(ctx):
     if rm_confirmation:
         shutil.rmtree(p.path)
         print(f"Project '{name}' removed!")
-        print("If you have a custom executor schedule, you should edit the executor file to reflect the new project ids. Do this with 'dex executor edit'.")
     else:
         print(f"Project {name} not removed.")
 
