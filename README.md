@@ -113,6 +113,8 @@ $: tree
 
 # The System
 
+![diagram.png](./assets/diagram.png)
+
 #### Tasks (units of work)
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
