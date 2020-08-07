@@ -573,12 +573,14 @@ def project_rename(ctx):
 @click.pass_context
 def project_rm(ctx):
     p = ctx.obj["PROJECT"]
+
     name = copy.deepcopy(p.name)
 
     rm_confirmation = ask_for_yn(f"Really remove project {p}?")
     if rm_confirmation:
         shutil.rmtree(p.path)
         print(f"Project '{name}' removed!")
+        print("If you have a custom executor schedule, you should edit the executor file to reflect the new project ids. Do this with 'dex executor edit'.")
     else:
         print(f"Project {name} not removed.")
 

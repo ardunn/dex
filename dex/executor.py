@@ -58,31 +58,6 @@ class Executor:
     def __repr__(self):
         return self.__str__()
 
-    @property
-    def project_map(self) -> dict:
-        """
-        Mapping of project id to project.
-
-        Returns:
-            {str: dex.Project}: Keys are alphabetic character project ids, values are project objects
-
-        """
-        return {p.id: p for p in self.projects}
-
-    @property
-    def project_map_today(self):
-        """
-        Get the project id : project obj map, but only for today's projects.
-
-        Returns:
-            {str: dex.Project}: Keys are alphabetic character project ids, values are project objects
-        """
-        todays_project_ids = self.executor_week[today]
-        pmap = self.project_map
-        if todays_project_ids == executor_all_projects_key:
-            todays_project_ids = list(pmap.keys())
-        return {p.id: p for p in self.projects if p.id in todays_project_ids}
-
     def get_tasks(self, only_today: bool) -> AttrDict:
         """
         Get a task collection of tasks across more than one project.
@@ -118,3 +93,30 @@ class Executor:
         all_todays_tasks = self.get_tasks(only_today=only_today)
         ordered = rank_tasks(all_todays_tasks, limit=n, include_inactive=include_inactive)
         return ordered
+
+    @property
+    def project_map(self) -> dict:
+        """
+        Mapping of project id to project.
+
+        Returns:
+            {str: dex.Project}: Keys are alphabetic character project ids, values are project objects
+
+        """
+        return {p.id: p for p in self.projects}
+
+    @property
+    def project_map_today(self):
+        """
+        Get the project id : project obj map, but only for today's projects.
+
+        Returns:
+            {str: dex.Project}: Keys are alphabetic character project ids, values are project objects
+        """
+        todays_project_ids = self.executor_week[today]
+        pmap = self.project_map
+        if todays_project_ids == executor_all_projects_key:
+            todays_project_ids = list(pmap.keys())
+        return {p.id: p for p in self.projects if p.id in todays_project_ids}
+
+
