@@ -10,7 +10,7 @@
 Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
 
 ![dex](./assets/dex.jpeg)
-###### Dex Jettster from "*Star Wars: Attack of the Clones*", who helps Obi-wan prioritize his time searching for a poison dart. Fortunaely, the commonalities between `dex` and Dex end there.
+###### Dex Jettster from "*Star Wars: Attack of the Clones*", who helps Obi-wan prioritize his time searching for a poison dart. Fortunately, the commonalities between `dex` and Dex end there.
 
 # Is `dex` for me?
 #### Take this quiz.
