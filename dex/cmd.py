@@ -9,9 +9,9 @@ import treelib
 from dex.project import Project
 from dex.executor import Executor
 from dex.logic import rank_tasks
-from dex.util import TerminalStyle, initiate_editor, AttrDict
+from dex.util import TerminalStyle, initiate_editor
 from dex.constants import status_primitives, hold_str, done_str, abandoned_str, ip_str, todo_str, \
-    executor_all_projects_key, valid_project_ids, importance_primitives, effort_primitives, max_due_date, due_date_fmt, today_in_executor_format, valid_recurrence_times, recurring_flag, no_flags
+    executor_all_projects_key, valid_project_ids, importance_primitives, effort_primitives, max_due_date, due_date_fmt, valid_recurrence_times, recurring_flag, no_flags
 
 '''
 # Top level commands
@@ -66,18 +66,18 @@ dex task [dexid] set ...                            # set an attribute of a task
     (--recurring/-r [days])
 
 
-# Task aliases
--------------------
-dex task [dexid] imp [val]
-dex task [dexid] eff [val]
-dex task [dexid] due [val] 
+# Task aliases (all shorthand for dex task [dexid] set)
+-------------------------------------------------------
+dex task [dexid] imp [val]                          # set the importance of the task to [val]
+dex task [dexid] eff [val]                          # set the effort of the task to [val]
+dex task [dexid] due [val]                          # set the due date/recurrence of the task 
     (--recurring/-r [days])
 
-dex task [dexid] exec
-dex task [dexid] done
-dex task [dexid] todo
-dex task [dexid] hold
-dex task [dexid] aban <<alias for abandon>>
+dex task [dexid] exec                               # manually set a task to in progress
+dex task [dexid] done                               # complete a task
+dex task [dexid] todo                               # mark a task as todo
+dex task [dexid] hold                               # put a task on hold
+dex task [dexid] aban <<alias for abandon>>         # abandon a task
 '''
 
 # Constants
