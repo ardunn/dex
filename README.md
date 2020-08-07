@@ -2,7 +2,7 @@
 
 | Tests | Release |
 |:-------:|:-------:|
-|![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)| None |
+|![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)| Coming soon! |
 
 #### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool).
 `dex` is an out-of-the-box usable, optionally programmatic kanban-ish FOSS productivity CLI which you have absolute control over. 
