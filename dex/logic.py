@@ -1,8 +1,8 @@
 import random
 from typing import List
 
-from dion.util import AttrDict
-from dion.task import Task
+from dex.task import Task
+from dex.util import AttrDict
 
 
 def rank_tasks(task_collection: AttrDict, limit: int = 0, include_inactive: bool = False) -> List[Task]:
