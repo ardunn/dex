@@ -311,40 +311,73 @@ def exec(ctx):
 
 @cli.command(help="Get info about your projects.")
 @click.option("--visualize", "-v", is_flag=True, help="Make a graph of current tasks.")
+@click.option("--include-inactive", "-i", is_flag=True, help="Include info on inactive (done and abandoned) tasks.")
 @click.pass_context
-def info(ctx, visualize):
+def info(ctx, visualize, include_inactive):
+    import seaborn
+    import scipy.stats as spstats
+    import matplotlib.pyplot as plt
+
     e = ctx.obj["EXECUTOR"]
-    print(f"The current dion working directory is '{e.path}'")
+    print(f"The current dex working directory is '{e.path}'")
     print(f"There are currently {len(e.projects)} projects.")
 
     print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=True, include_inactive=False))} active tasks for today's projects.")
-    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=True, include_inactive=True))} tasks for today's projects, including done and abandoned.")
+    if include_inactive:
+        print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=True, include_inactive=True))} tasks for today's projects, including done and abandoned.")
 
     print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=False))} active tasks for all projects.")
-    print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=True))} tasks for all projects, including done and abandoned.")
+    if include_inactive:
+        print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=True))} tasks for all projects, including done and abandoned.")
 
     if visualize:
-        projects = s.get_projects()
-        n_tasks_w_status = {sp: 0 for sp in status_primitives}
-        n_tasks_w_priority = {pp: 0 for pp in priority_primitives}
-        for p in projects:
-            tasks = p.tasks
-#             for sp in status_primitives:
-#                 n_tasks_w_status[sp] += len(tasks[sp])
-#             for pp in priority_primitives:
-#                 n_tasks_w_priority[pp] += len([t for t in tasks.all if t.priority == pp and t.status != done_str])
-#
-#         seaborn.set_style("darkgrid")
-#         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
-#         ax_status, ax_prio = axes
-#
-#         seaborn.barplot([f"priority {pp}" for pp in priority_primitives], [n_tasks_w_priority[pp] for pp in priority_primitives], ax=ax_prio, palette=seaborn.color_palette("Blues_r", len(priority_primitives)))
-#         ax_prio.set_title("Current active (not done) tasks by priority")
-#         seaborn.barplot(list(status_primitives), [n_tasks_w_status[sp] for sp in status_primitives], ax=ax_status, palette=seaborn.color_palette("Reds_r", len(status_primitives)))
-#         ax_status.set_title("All tasks by status")
-#
-#         fig.tight_layout()
-#         plt.show()
+        std = 3
+
+        primitives = status_primitives if include_inactive else [hold_str, todo_str, ip_str]
+
+        n_tasks_w_status = {sp: 0 for sp in primitives}
+        task_density_distributions = []
+        for p in e.projects:
+            for sp in primitives:
+                tasks_w_status = p.tasks[sp]
+                n_tasks_w_status[sp] += len(tasks_w_status)
+            for t in [task for task in p.tasks.all if task.status in primitives]:
+                task_density_distributions.append(spstats.norm(t.days_till_due, std))
+
+        corrective_multiplier = 1/spstats.norm(0, std).pdf(0)
+
+        means = [td.mean() for td in task_density_distributions]
+        task_density_domain_positive = list(range(int(max(means)) + std * 5))
+        task_density_positive = [sum([td.pdf(day) for td in task_density_distributions]) * corrective_multiplier for day in task_density_domain_positive]
+
+        task_density_domain_negative = list(range(int(min(means)) - std * 5, 1))
+        task_density_negative = [sum([td.pdf(day) for td in task_density_distributions]) * corrective_multiplier for day in task_density_domain_negative]
+
+
+        seaborn.set_style("darkgrid")
+        fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 6))
+        ax_status, ax_date = axes
+
+        # seaborn.kdeplot(task_density, shade=True, ax=ax_date)
+        # seaborn.relplot(task_density_domain, task_density, ax=ax_date)
+        # ax_date.plot([0, 0], [0, max(task_density_positive + task_density_negative)], color="black", linewidth=5)
+
+        ax_date.plot(task_density_domain_positive, task_density_positive, color="blue")
+        ax_date.fill_between(task_density_domain_positive, task_density_positive, color="blue", alpha=0.3)
+
+        ax_date.plot(task_density_domain_negative, task_density_negative, color="red")
+        ax_date.fill_between(task_density_domain_negative, task_density_negative, color="red", alpha=0.3)
+
+        date_title_str = "All tasks (including done+abandoned)" if include_inactive else "Currently active tasks"
+        ax_date.set_title(f"{date_title_str}")
+        ax_date.set_xlabel("Days from today")
+        ax_date.set_ylabel("Number of tasks")
+        seaborn.barplot(list(primitives), [n_tasks_w_status[sp] for sp in primitives], ax=ax_status, palette=seaborn.color_palette("Greens_r", len(primitives)))
+        ax_status.set_title("All tasks by status")
+        ax_status.set_ylabel("Number of tasks")
+
+        fig.tight_layout()
+        plt.show()
 
 
 # dex example [root path]
