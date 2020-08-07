@@ -319,10 +319,6 @@ def exec(ctx):
 @click.option("--include-inactive", "-i", is_flag=True, help="Include info on inactive (done and abandoned) tasks.")
 @click.pass_context
 def info(ctx, visualize, include_inactive):
-    import seaborn
-    import scipy.stats as spstats
-    import matplotlib.pyplot as plt
-
     e = ctx.obj["EXECUTOR"]
     print(f"The current dex working directory is '{e.path}'")
     print(f"There are currently {len(e.projects)} projects.")
@@ -336,6 +332,10 @@ def info(ctx, visualize, include_inactive):
         print(f"There are currently {len(e.get_n_highest_priority_tasks(n=10000, only_today=False, include_inactive=True))} tasks for all projects, including done and abandoned.")
 
     if visualize:
+        import seaborn
+        import scipy.stats as spstats
+        import matplotlib.pyplot as plt
+
         std = 3
 
         primitives = status_primitives if include_inactive else [hold_str, todo_str, ip_str]
