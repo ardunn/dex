@@ -1,5 +1,7 @@
 import os
 import copy
+import json
+import random
 import datetime
 import shutil
 
@@ -86,7 +88,6 @@ TASK_SUBCOMMAND_LIST = PROJECT_SUBCOMMAND_LIST + ["edit", "done", "todo", "hold"
 CONTAINER_DIR = os.path.dirname(os.path.abspath(__file__))
 CURRENT_ROOT_PATH_LOC = os.path.join(CONTAINER_DIR, "current_root.path")
 CURRENT_ROOT_IGNORE_LOC = os.path.join(CONTAINER_DIR, "current_root.ignore")
-REFERENCE_PROJSET_PATH = os.path.join(CONTAINER_DIR, "assets/reference_executor")
 MAX_ENTRY_RETRIES = 3
 
 STATUS_COLORMAP = {"todo": "b", "ip": "y", "hold": "m", "done": "g", "abandoned": "k"}
@@ -273,7 +274,7 @@ def check_input_not_empty(input_str):
 @click.pass_context
 def cli(ctx):
     ctx.ensure_object(dict)
-    if ctx.invoked_subcommand != "init":
+    if ctx.invoked_subcommand not in ["init", "example"]:
         checks_root_path_loc()
         e = Executor(path=get_current_root_path(), ignored_dirs=get_current_ignore())
         ctx.obj["EXECUTOR"] = e
@@ -289,7 +290,6 @@ def init(path, ignore):
     if not ignore:
         ignore = tuple()
     descriptor = "existing" if os.path.exists(path) else "new"
-    print(ignore)
     s = Executor(path=path, ignored_dirs=ignore)
     write_path_as_current_root_path(s.path)
     write_ignore(ignore)
@@ -373,7 +373,7 @@ def info(ctx, visualize, include_inactive):
         ax_date.set_xlabel("Days from today")
         ax_date.set_ylabel("Number of tasks")
         seaborn.barplot(list(primitives), [n_tasks_w_status[sp] for sp in primitives], ax=ax_status, palette=seaborn.color_palette("Greens_r", len(primitives)))
-        ax_status.set_title("All tasks by status")
+        ax_status.set_title("Currently active tasks by status" if not include_inactive else "All tasks (including done+abandoned) by status")
         ax_status.set_ylabel("Number of tasks")
 
         fig.tight_layout()
@@ -381,13 +381,70 @@ def info(ctx, visualize, include_inactive):
 
 
 # dex example [root path]
-# @cli.command(help="Get info about your projects. Enter a new folder path for the project directory!")
-# @click.argument("path", type=click.Path(file_okay=False, dir_okay=False))
-# def example(path):
-#     if os.path.exists(path):
-#         print(f"Path {path} exists. Choose a new path.")
-#     shutil.copytree(REFERENCE_PROJSET_PATH, path)
-#     print(f"New example created at {path}. Use 'dion init {path}' to initialize it and start work!")
+@cli.command(help="Generate an example project in a new folder. Make sure the path to the folder is new (doesn't already exist)")
+@click.argument("path", type=click.Path(file_okay=False, dir_okay=False))
+def example(path):
+    if os.path.exists(path):
+        print(ts.f(ERROR_COLOR, f"Path {path} exists. Choose a new path."))
+        click.Context.exit(1)
+    else:
+        projects = {
+            "a": "Cure COVID-19",
+            "b": "Stop Alien Invasion",
+            "c": "Create quantum computer",
+            "d": "Write PhD thesis",
+            "e": "Build new house"
+        }
+
+        for pid, p in projects.items():
+            projpath = os.path.abspath(os.path.join(path, p))
+            Project.new(projpath, pid)
+        e = Executor(path)
+
+        with open(e.executor_file, "w") as f:
+            schedule = {
+                "Monday": ["a", "c", "e"],
+                "Tuesday": ["b", "d"],
+                "Wednesday": ["a", "c", "e"],
+                "Thursday": ["b", "d"],
+                "Friday": ["a", "c", "e"],
+                "Saturday": "all",
+                "Sunday": "all"
+            }
+            json.dump(schedule, f)
+        e = Executor(path)
+
+
+        task_names_map = {
+            "a": ["Research literature on vaccines", "Get FDA Approval", "Find adequate host cells", "work out manufacturing contract"],
+            "b": ["Begin peace talks with aliens", "Research lazer weaponry", "Activate nuclear missile silos", "Scramble the air force", "Capture specimens for probing weaknesses"],
+            "c": ["Develop novel superconductor", "Increase qubit count", "Ask Dr. Hyde about decoherence", "Secure funding from DOE", "Code crypto-cracker"],
+            "d": ["Come up with some new ideas", "Read the literatre", "Schedule qualifying exam", "Email ideas to advisor"],
+            "e": ["Call Tyler and sketch floorplan", "Get price quote from auditor", "Negotiate contract with subcontractor", "Pour concrete in basement"],
+        }
+
+        time_periods = {"overdue": list(range(-20, -1)), "within a week": list(range(7)), "within a month": list(range(30)), "longer": list(range(30, 360)), "end": list(range(364))}
+        for pid, task_names in task_names_map.items():
+            for task_name in task_names:
+                days_till_due = random.choice(time_periods[random.choice([k for k in time_periods.keys()])])
+                date = datetime.datetime.today() + datetime.timedelta(days=days_till_due)
+                e.project_map[pid].create_new_task(
+                    task_name,
+                    random.choice(effort_primitives),
+                    date,
+                    random.choice(importance_primitives),
+                    random.choice([hold_str, todo_str, ip_str]),
+                    random.choice([["n"]] * 10 + [["r7"], ["r30"]]),
+                    edit_content=False
+                )
+
+        mark_as_inactive = e.get_n_highest_priority_tasks(1000, only_today=False, include_inactive=False)
+        for i, t in enumerate(random.sample(mark_as_inactive, 4)):
+            if i == 3:
+                t.set_status(abandoned_str)
+            else:
+                t.set_status(done_str)
+        print(f"New example created at {path}. Use 'dex init {path}' to initialize it and start work!")
 
 
 # Schedule level commands ##############################################################################################
@@ -451,7 +508,7 @@ def project(ctx, project_id):
 
     # Avoid scenario where someone types "dion project view" and it interprets "view" as the project id
     if project_id in PROJECT_SUBCOMMAND_LIST:
-        print(ts.f(ERROR_COLOR, f"To access command '{project_id}' use 'dion project [PROJECT_ID] '{project_id}'."))
+        print(ts.f(ERROR_COLOR, f"To access command '{project_id}' use 'dex project [PROJECT_ID] '{project_id}'."))
         click.Context.exit(1)
     else:
         if ctx.invoked_subcommand is None:
@@ -473,12 +530,13 @@ def project(ctx, project_id):
                 print_projects(e.project_map, show_n_tasks=0)
             else:
                 pmap = ctx.obj["PMAP"]
-                check_project_id_exists(pmap, project_id)
-                ctx.obj["PROJECT"] = pmap[project_id]
-
                 # view the task
                 if project_id is not None:
                     print_project_task_collection(pmap[project_id], show_inactive=True, n_shown=10000)
+        else:
+            pmap = ctx.obj["PMAP"]
+            check_project_id_exists(pmap, project_id)
+            ctx.obj["PROJECT"] = pmap[project_id]
 
 
 # dex project [project_id] exec
@@ -502,7 +560,7 @@ def project_rename(ctx):
     new_name = input("New project name: ")
     check_input_not_empty(new_name)
     p.rename(new_name)
-    print(f"Project '{old_name}' renamed to '{p.name}.")
+    print(f"Project '{old_name}' renamed to '{new_name}.")
 
 
 # dex project [project_id] rm
@@ -666,7 +724,7 @@ def task(ctx, task_id):
 
     # Avoid scenario where someone types "dion task view" and it interprets "view" as the project id
     if task_id in TASK_SUBCOMMAND_LIST:
-        print(ts.f(ERROR_COLOR, f"To access command '{task_id}' use 'dion task [DEX_ID] '{task_id}'."))
+        print(ts.f(ERROR_COLOR, f"To access command '{task_id}' use 'dex task [DEX_ID] '{task_id}'."))
         click.Context.exit(1)
     else:
         if ctx.invoked_subcommand is None and task_id == "new":
