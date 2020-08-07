@@ -28,11 +28,13 @@ Keep your tasks as local markdown files and `dex` will tell you how to optimally
 ##### View tasks across all projects, ordered intelligently by priority
 
 `$: dex tasks`
+
 ![dex](./assets/example_tasks.png)
 
 A little less detail
 
 `$: dex tasks -h -n 7`
+
 ![dex](./assets/example_tasks_less.png)
 
 
@@ -47,6 +49,7 @@ A little less detail
 
 ##### Intelligently and automatically determine what to work on, according to a weekly schedule
 `$: dex exec`
+
 ![dex](./assets/example_exec.png)
 
 ---
@@ -58,6 +61,7 @@ A little less detail
 
 
 `$ dex info -v -i`
+
 ![dex](./assets/example_vis_all.png)
 ```
 The current dex working directory is '/home/dude/down/project_example'
