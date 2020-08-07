@@ -1,4 +1,6 @@
 # Day executor (`dex`)
+![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)](https://github.com/ardunn/dex/actions)
+
 #### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
 It tells you what to work on and when. You can also create, edit, and view tasks. It is an out-of-the-box usable, optionally programmatic kanban-ish free productivity CLI which you have absolute control over.
 
