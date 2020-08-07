@@ -6,11 +6,11 @@
 
 #### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool).
 ###### Use it to get more done in less time with less organization overhead.
-`dex` is an out-of-the-box usable, optionally programmatic kanban-ish FOSS productivity CLI which you have absolute control over. 
+`dex` is an out-of-the-box usable, optionally programmatic, kanban-ish FOSS productivity CLI which you have absolute control over. 
 Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
 
 ![dex](./assets/dex.jpeg)
-###### Dex from "*Star Wars: Attack of the Clones*", who helps Obi-wan prioritize his time searching for a poison dart.
+###### Dex Jettster from "*Star Wars: Attack of the Clones*", who helps Obi-wan prioritize his time searching for a poison dart. Fortunaely, the commonalities between `dex` and Dex end there.
 
 # Is `dex` for me?
 #### Take this quiz.
