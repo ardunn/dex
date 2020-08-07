@@ -18,10 +18,10 @@ from dex.constants import status_primitives, hold_str, done_str, abandoned_str, 
 '''
 # Top level commands
 --------------------
-dex init [root path]                                # create a new executor file and save the path somewhere
+dex init [path]                                     # create a new executor file and save the path somewhere
 dex exec                                            # print and start work on the highest importance task, printing all info
 dex info                                            # output some info about the current projects
-dex example                                         # create an example directory and set the current project to it
+dex example [path]                                  # create an example directory
 
 
 # Executor commands
@@ -79,7 +79,7 @@ dex task [dexid] exec                               # manually set a task to in 
 dex task [dexid] done                               # complete a task
 dex task [dexid] todo                               # mark a task as todo
 dex task [dexid] hold                               # put a task on hold
-dex task [dexid] aban <<alias for abandon>>         # abandon a task
+dex task [dexid] aban                               # abandon a task
 '''
 
 # Constants
@@ -421,19 +421,26 @@ def example(path):
 
 
         task_names_map = {
-            "a": ["Research literature on vaccines", "Get FDA Approval", "Find adequate host cells", "work out manufacturing contract"],
-            "b": ["Begin peace talks with aliens", "Research lazer weaponry", "Activate nuclear missile silos", "Scramble the air force", "Capture specimens for probing weaknesses"],
-            "c": ["Develop novel superconductor", "Increase qubit count", "Ask Dr. Hyde about decoherence", "Secure funding from DOE", "Code crypto-cracker"],
-            "d": ["Come up with some new ideas", "Read the literatre", "Schedule qualifying exam", "Email ideas to advisor"],
-            "e": ["Call Tyler and sketch floorplan", "Get price quote from auditor", "Negotiate contract with subcontractor", "Pour concrete in basement"],
+            "Cure COVID-19": ["Research literature on vaccines", "Get FDA Approval", "Find adequate host cells", "work out manufacturing contract"],
+            "Stop Alien Invasion": ["Begin peace talks with aliens", "Research lazer weaponry", "Activate nuclear missile silos", "Scramble the air force", "Capture specimens for probing weaknesses"],
+            "Create quantum computer": ["Develop novel superconductor", "Increase qubit count", "Ask Dr. Hyde about decoherence", "Secure funding from DOE", "Code crypto-cracker"],
+            "Write PhD thesis": ["Come up with some new ideas", "Read the literatre", "Schedule qualifying exam", "Email ideas to advisor"],
+            "Build new house": ["Call Tyler and sketch floorplan", "Get price quote from auditor", "Negotiate contract with subcontractor", "Pour concrete in basement"],
         }
 
-        time_periods = {"overdue": list(range(-20, -1)), "within a week": list(range(7)), "within a month": list(range(30)), "longer": list(range(30, 360)), "end": list(range(364))}
-        for pid, task_names in task_names_map.items():
+        time_periods = {
+            "overdue": list(range(-20, -1)),
+            "within a week": list(range(7)),
+            "within a month": list(range(30)),
+            "longer": list(range(30, 360)),
+            "end": list(range(364))
+        }
+        for pname, task_names in task_names_map.items():
             for task_name in task_names:
                 days_till_due = random.choice(time_periods[random.choice([k for k in time_periods.keys()])])
                 date = datetime.datetime.today() + datetime.timedelta(days=days_till_due)
-                e.project_map[pid].create_new_task(
+                proj = [p for p in e.projects if p.name == pname][0]
+                proj.create_new_task(
                     task_name,
                     random.choice(effort_primitives),
                     date,

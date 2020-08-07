@@ -10,7 +10,7 @@ Keep your tasks as local markdown files and `dex` will tell you how to optimally
 
 Use `dex` to get more done in less time with less organization overhead.
 
-## Is `dex` for me?
+# Is `dex` for me?
 #### Take this quiz.
 
 1. Are you tired of trying many "productivity" tools, only to find you spend more time organizing your tasks than you do completing them?
@@ -24,66 +24,123 @@ Use `dex` to get more done in less time with less organization overhead.
 
 # Highlights
 ##### View tasks across all projects, ordered intelligently by importance
-![dion](./assets/example_tasks.png)
+
+`$: dex tasks`
+![dex](./assets/example_tasks.png)
 
 ---
 
 ##### View tasks by project
-![dion](./assets/example_tasks_by_project.png)
+
+`$: dex tasks -p`
+![dex](./assets/example_tasks_by_project.png)
 
 ---
 
 ##### Intelligently and automatically determine what to work on, according to a weekly schedule
-![dion](./assets/example_work.png)
+`$: dex exec`
+![dex](./assets/example_exec.png)
 
 ---
 
-##### Get an overview
-![dion](./assets/example_info.png)
-![dion](./assets/example_vis.png)
+##### Get a visual overview
+`$: dex info -v`
+
+![dex](./assets/example_vis.png)
+
+
+`$ dex info -v -i`
+![dex](./assets/example_vis_all.png)
+```
+The current dex working directory is '/home/dude/down/project_example'
+There are currently 5 projects.
+There are currently 7 active tasks for today's projects.
+There are currently 10 tasks for today's projects, including done and abandoned.
+There are currently 18 active tasks for all projects.
+There are currently 22 tasks for all projects, including done and abandoned.
+```
 
 ---
 
-##### Your tasks are markdown files which can be edited however you like (or via `dion` CLI)
-![dion](./assets/example_tree.png)
+##### Your tasks are markdown files which can be edited or linked however you like, including via:
+- Tools like [Obsidian](https://obsidian.md) and [Atom](https://atom.io)
+- Basic text editors, such as `vim` or `nano`
+- `dex` CLI
+
+```
+$: tree
+.
+├── Build new house
+│   ├── notes
+│   └── tasks
+│       ├── abandoned+done
+│       ├── Call Tyler and sketch floorplan.md
+│       ├── Get price quote from auditor.md
+│       ├── Negotiate contract with subcontractor.md
+│       └── Pour concrete in basement.md
+├── Create quantum computer
+│   ├── notes
+│   └── tasks
+│       ├── abandoned+done
+│       ├── Ask Dr. Hyde about decoherence.md
+│       ├── Code crypto-cracker.md
+│       ├── Develop novel superconductor.md
+│       └── Increase qubit count.md
+├── Cure COVID-19
+│   ├── notes
+│   └── tasks
+│       ├── abandoned+done
+│       ├── Find adequate host cells.md
+│       ├── Get FDA Approval.md
+│       ├── Research literature on vaccines.md
+│       └── work out manufacturing contract.md
+...
+
+```
 
 
 # The System
-#### Tasks
+
+#### Tasks (unit of work)
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
 
-Tasks have both a **status** (todo, doing, on hold, done) and a **priority** (1-3, lower is more important).
+##### Tasks have the following attributes:
 
-#### Projects
+- **Status**: Todo, In progress (IP), On hold, Done, and Abandoned
+- **Effort**: How much effort (approximately) the task will take to complete (a number, 1-5)
+- **Importance**: How important the task is (a number, 1-5). Effort of 5 might be something that could get you promoted, while effort of 1 has almost no consequences.
+- **Due date**: When the task is due.
+
+
+#### Projects (collection of tasks)
 
 Projects are long-standing collections of tasks. Projects are folders. Besides containing the task markdown files, the project can contain whatever you want (e.g., dedicated notes folder, code subfolders, etc.). I just have a notes subfolder but it can be whatever you want.
 
-Using these heuristics and your project schedule, `dion` can tell you which tasks (Markdown files) and Projects (folders of tasks) to work on. `dion` works best when you define tasks which require approximately equal time.
 
-#### Schedule
+#### Executor (schedule of projects)
 
-A schedule is your entire set of projects. Your schedule is defined weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Your schedule is defined in a single json file in a folder containing your dion project folders.
-
+A schedule is your entire set of projects. Your schedule is defined weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Your schedule is defined in a single json file in a folder containing your dex project folders.
 
 #### Work
 
-`dion`'s system for choosing work tasks is built on a few core assumptions:
+`dex`'s system for choosing tasks is built on a few core assumptions:
 
 1. Choosing what to work on is hard, especially when you have many projects and tasks.
 2. Your time is best spent working on one task (or group of highly related tasks) until it is done, rather than skipping between tasks (AKA "deep work")
-3. Tasks have higher and lower priorities, meaning some need to be done before others.
+3. Tasks have higher and lower priorities (based on status, effort, importance, and due date), meaning some need to be done before others.
 
-Based on your schedule, dion ranks tasks based on the priorities and statuses (among other attributes) of all available tasks.
-The idea is that all the human effort required to prioritize work is done when you enter new tasks, and dion handles the rest on a daily basis.
+`dex` uses these heuristics to determine the optimal way to execute your tasks.
+
+The idea is that all the human effort required to prioritize work is done when you enter new tasks, and `dex` handles the rest on a daily basis.
 
 
 
 # Installation
 For now, clone the repo and install via pip:
 ```bash
-$: git clone https://github.com/ardunn/dion
-$: cd dion
+$: git clone https://github.com/ardunn/dex
+$: cd dex
 $: pip install . -r requirements.txt --user
 ```
 
@@ -93,252 +150,108 @@ Coming soon, once some kinks are worked out: PyPi install!
 # Usage
 
 
-### Basics
+## Basics
 
-First, initialize an example to work with:
+#### Make an example:
+```buildoutcfg
+$: dex example /path/to/my/example
+```
+
+#### Initiate dex in an existing folder 
+```buildoutcfg
+$: dex init /path/to/my/example
+```
+
+#### View, edit, or make a new project
+Projects are identified with a single alphabetic character
+```buildoutcfg
+$: dex project a               # view project a
+$: dex project a rename        # rename project a
+$: dex project new             # make a new project
+```
+
+#### View, edit, or make a new task
+Tasks are identified by their dex ID (project ID + a number)
+```
+$: dex task a1                  # view task a1
+$: dex task a1 edit             # edit the content of task a1
+$: dex task new                 # make a new task
+```
+
+#### Complete or change tasks' statuses
+```buildoutcfg
+$: dex task a1 done             # complete task a1
+$: dex task b7 todo             # mark task b7 as todo
+$: dex task c11 aban            # abandon task c11
+```
+
+
+## List of all commands
+
 
 ```bash
-$: dion example ~/Downloads/productivity_system  # creates some example files in your favorite directory
-$: dion init ~/Downloads/productivity_system     # moves dion's attention to this schedule working directory
+# Top level commands
+--------------------
+dex init [path]                                     # create a new executor file and save the path somewhere
+dex exec                                            # print and start work on the highest importance task, printing all info
+dex info                                            # output some info about the current projects
+dex example [path]                                  # create an example directory
+
+
+# Executor commands
+-------------------
+dex executor                                        # view weekly schedule
+dex executor edit                                   # edit the schedule file
+
+
+# Project commands
+-------------------
+dex projects
+dex project new                                     # make a new project
+dex project [id]                                    # show all tasks for this project, ordered by priority             
+dex project [id] exec                               # work on this specific project (not recommended)
+dex project [id] rename                             # rename a project
+dex project [id] rm                                 # delete a project
+
+
+# Task commands
+-------------------
+dex tasks                                           # view ordered tasks across projects (default relevant to today, ordered by computed priority)
+    Filtering (exclusive) options
+    (--by-importance/-i)                            # Tasks ranked strictly by importance
+    (--by-effort/-e)                                # Tasks ranked strictly by effort
+    (--by-due/-d)                                   # Tasks ranked strictly by due date
+    (--by-status/-s)                                # Tasks organized by status, ranked internally by computed priority
+    (--by-project/-p)                               # Tasks organized by project, ranked internally by computed priority
+    
+    Additional options
+    (--n-shown/-n [val])                            # limit to this number of total tasks shown
+    (--all-projects/-a)                             # show across all projects, not just today
+    (--include-inactive)                            # show inactive (done+abandoned) tasks
+    
+dex task                                            # make a new task
+dex task [dexid]                                    # view a task
+dex task [dexid] edit                               # edit a task
+dex task [dexid] rename                             # rename a task
+    
+dex task [dexid] set ...                            # set an attribute of a task
+    (--importance/-i [val]) 
+    (--efort/-e [val]) 
+    (--due/-d [val) 
+    (--status/-s [status])
+    (--recurring/-r [days])
+
+
+# Task aliases (all shorthand for dex task [dexid] set)
+-------------------------------------------------------
+dex task [dexid] imp [val]                          # set the importance of the task to [val]
+dex task [dexid] eff [val]                          # set the effort of the task to [val]
+dex task [dexid] due [val]                          # set the due date/recurrence of the task 
+    (--recurring/-r [days])
+
+dex task [dexid] exec                               # manually set a task to in progress
+dex task [dexid] done                               # complete a task
+dex task [dexid] todo                               # mark a task as todo
+dex task [dexid] hold                               # put a task on hold
+dex task [dexid] aban                               # abandon a task
 ```
-
-Get an overview of current projects:
-
-```bash
-$: dion projects
-```
-
-```bash
-All projects
-├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
-├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
-└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
-```
-
-Projects in `dion` can be accessed through their *project id*, a single letter.
-
-Now get an overview of tasks for each project.
-
-```bash
-$: dion tasks -n 3 --by-project
-```
-
-```bash
-All projects
-├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
-│   ├── a3 (todo) [prio=1]: Use NLP to scan literature
-│   ├── a4 (todo) [prio=2]: Learn biology
-│   └── a2 (hold) [prio=2]: Create vaccine
-├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
-│   ├── b3 (todo) [prio=1]: Commission laser weapon
-│   ├── b2 (todo) [prio=2]: Invent warp drive
-│   └── b1 (doing) [prio=3]: try to make peace
-└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
-    ├── c1 (doing) [prio=1]: Look into quantum entanglement
-    ├── c3 (todo) [prio=2]: Get liquid nitrogen
-    └── c2 (hold) [prio=3]: get funding
-```
-
-Tasks are accessible by their *task id*, the project letter followed by an integer (e.g., `a1`)
-
-View all tasks together:
-```bash
-$: dion tasks
-```
-
-```bash
-Top 10 tasks from all 3 projects:
-├── b2 (doing) [prio=1]: Commission laser weapon
-├── d1 (doing) [prio=1]: Look into quantum entanglement
-├── a3 (todo) [prio=1]: Use NLP to scan literature
-├── a4 (todo) [prio=2]: Learn biology
-├── b4 (todo) [prio=2]: Invent warp drive
-├── d3 (todo) [prio=2]: Get liquid nitrogen
-├── b1 (doing) [prio=3]: try to make peace
-├── a2 (hold) [prio=2]: Create vaccine
-└── d2 (hold) [prio=3]: get funding
-```
-
-Start work:
-```bash
-$: dion work
-```
-
-```bash
-Task c1: Look into quantum entanglement
-View this task? (y/n) n
-You're now working on 'Look into quantum entanglement'
-Now get to work!
-```
-
-### Tasks
-
-Adding a task:
-```bash
-$: dion task new
-```
-
-```bash
-Select a project id from the following projects:
-------------------------------------------------
-All projects
-├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
-├── Project b: Destroy Aliens [2 todo, 1 doing, 0 held, 0 done]
-└── Project c: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
-
-Project ID: b
-Enter a name for this task: Infiltrate mothership 
-Enter the task's priority (1 - 3, lower is more important): 2
-Enter the task's status (one of ('todo', 'doing', 'hold', 'done'), or hit enter to mark as todo: doing
-Edit the task's content? (y/n) n
-
-----------------------------------------------------------------------------
-Task b4: 'Infiltrate mothership' created with priority 2 and status 'doing'.
-```
-
-Change the status of an existing task
-```
-$: dion task b4 done  # complete a task
-```
-or
-```bash
-$: dion task b4 hold  # put a task on hold
-```
-or
-```bash
-$: dion task b4 todo  # mark a task as todo
-``` 
-or
-```bash
-$: dion task b4 work # not recommended, manually set a given task as doing
-```
-
-Change a task priority
-```bash
-$: dion task a1 prio 3
-```
-
-View a task
-```bash
-$: dion task a1 view
-```
-
-```bash
-Get funding: (done) [prio=1]
-
-Need to get funding
-    - Ask federal government?
-    - Ask state government?
-    - Consider private industries
-  Important: tell them u know python
-
-```
-
-Edit a task
-```bash
-$: dion task b2 edit
-```
-
-Rename a task
-```bash
-$: dion task b2 rename
-```
-
-### Projects
-
-Adding a project
-```bash
-$: dion project new
-```
-
-```bash
-Project `Cool new project` added.
-All projects
-├── Project a: Cure COVID-19 [2 todo, 0 doing, 1 held, 1 done]
-├── Project b: Destroy Aliens [2 todo, 2 doing, 0 held, 0 done]
-├── Project c: Cool new project [0 todo, 0 doing, 0 held, 0 done]
-└── Project d: Create quantum computer [1 todo, 1 doing, 1 held, 0 done]
-```
-
-View a single project
-```bash
-$: dion project b view
-```
-
-```bash
-All projects
-└── Project b: Destroy Aliens [2 todo, 2 doing, 0 held, 0 done]
-    ├── b4 (todo) [prio=1]: Commission laser weapon
-    ├── b2 (doing) [prio=2]: Infiltrate mothership
-    ├── b3 (todo) [prio=2]: Invent warp drive
-    └── b1 (doing) [prio=3]: try to make peace
-```
-
-Work on a given project, with task selected by algorithm constrained to this project's tasks
-```bash
-$: dion project b work
-```
-
-```bash
-Task b4: Commission laser weapon
-View this task? (y/n) n
-You're now working on 'Commission laser weapon'
-Now get to work!
-```
-
-Change all priorities of a project's tasks
-```bash
-$: dion project b prio 1
-```
-
-
-Rename a project
-```bash
-$: dion project b rename
-```
-
-Remove a project
-```bash
-$: dion project b rm
-```
-
-### Schedule
-View weekly schedule
-```bash
-$: dion schedule
-```
-
-```bash
-Schedule
-├── Monday
-│   ├── Cure COVID-19
-│   ├── Destroy Aliens
-│   ├── Cool new project
-│   └── Create quantum computer
-...
-└── Sunday
-    ├── Cure COVID-19
-    ├── Destroy Aliens
-    ├── Cool new project
-    └── Create quantum computer
-
-```
-
-Edit weekly schedule
-```bash
-$: dion schedule edit
-```
-
-### Other
-Get info about all projects
-```bash
-$: dion info -v
-```
-
-```
-The current dion working directory is /home/x/down/example
-There are currently 4 projects.
-There are currently 10 active tasks.
-There are currently 11 total tasks, including done.
-```
-![example_vis2](assets/example_vis2.png)
