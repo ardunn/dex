@@ -134,7 +134,7 @@ Projects are long-standing collections of tasks. Projects are folders. Besides c
 
 #### Executor (schedule of projects)
 
-The executor is your entire set of projects defined a weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Or you can work on every project every day; it's really up to you.
+The executor is your entire set of projects defined on a weekly basis; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Or you can work on every project every day; it's really up to you.
 
 #### Work
 
