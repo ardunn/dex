@@ -9,6 +9,9 @@
 `dex` is an out-of-the-box usable, optionally programmatic kanban-ish FOSS productivity CLI which you have absolute control over. 
 Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
 
+![dex](./assets/dex.jpeg)
+###### Dex from "*Star Wars: Attack of the Clones*", who helps Obi-wan prioritize his time searching for a poison dart.
+
 # Is `dex` for me?
 #### Take this quiz.
 
@@ -22,10 +25,16 @@ Keep your tasks as local markdown files and `dex` will tell you how to optimally
 
 
 # Highlights
-##### View tasks across all projects, ordered intelligently by importance
+##### View tasks across all projects, ordered intelligently by priority
 
 `$: dex tasks`
 ![dex](./assets/example_tasks.png)
+
+A little less detail
+
+`$: dex tasks -h -n 7`
+![dex](./assets/example_tasks_less.png)
+
 
 ---
 
@@ -100,7 +109,7 @@ $: tree
 
 # The System
 
-#### Tasks (unit of work)
+#### Tasks (units of work)
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
 
@@ -108,8 +117,8 @@ Tasks are non-trivial, self-contained units of work. They are individual markdow
 
 - **Status**: Todo, In progress (IP), On hold, Done, and Abandoned
 - **Effort**: How much effort (approximately) the task will take to complete (a number, 1-5)
-- **Importance**: How important the task is (a number, 1-5). Effort of 5 might be something that could get you promoted, while effort of 1 has almost no consequences.
-- **Due date**: When the task is due.
+- **Importance**: How important the task is (a number, 1-5). Effort of 5 might be something that could get you promoted (or fired!), while effort of 1 has almost no consequences.
+- **Due date**: Day when the task is due.
 
 
 #### Projects (collection of tasks)
@@ -119,7 +128,7 @@ Projects are long-standing collections of tasks. Projects are folders. Besides c
 
 #### Executor (schedule of projects)
 
-A schedule is your entire set of projects. Your schedule is defined weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Your schedule is defined in a single json file in a folder containing your dex project folders.
+The executor is your entire set of projects defined a weekly; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Or you can work on every project every day; it's really up to you.
 
 #### Work
 

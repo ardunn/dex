@@ -211,7 +211,7 @@ def ask_for_yn(prompt, action=None):
 
 
 def print_task_work_interface(task):
-    print(ts.f("u", f"Task {get_task_string(task)}"))
+    print(get_task_string(task, colorize_status=True, id_color="u", name_color="u"))
     ask_for_yn("View this task?", action=task.view)
     task.set_status(ip_str)
     print(ts.f(SUCCESS_COLOR, f"You're now working on '{task.name}'"))
@@ -301,7 +301,7 @@ def init(path, ignore):
     print(f"{descriptor.capitalize()} executor initialized in path: {path}")
 
 
-# dex work
+# dex exec
 @cli.command(help="Automatically determine most important task and start work.")
 @click.pass_context
 def exec(ctx):
