@@ -5,10 +5,9 @@
 |![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)| Coming soon! |
 
 #### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool).
+###### Use it to get more done in less time with less organization overhead.
 `dex` is an out-of-the-box usable, optionally programmatic kanban-ish FOSS productivity CLI which you have absolute control over. 
 Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
-
-Use `dex` to get more done in less time with less organization overhead.
 
 # Is `dex` for me?
 #### Take this quiz.
