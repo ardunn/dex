@@ -4,39 +4,22 @@
 |:-------:|:-------:|
 |![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)| None |
 
-#### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
-It tells you what to work on and when. You can also create, edit, and view tasks. It is an out-of-the-box usable, optionally programmatic kanban-ish free productivity CLI which you have absolute control over.
+#### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool).
+`dex` is an out-of-the-box usable, optionally programmatic kanban-ish FOSS productivity CLI which you have absolute control over. 
+Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
 
+Use `dex` to get more done in less time with less organization overhead.
 
-
-
-
----
-
-### Previously...
-
-
-# `dion` - a productivity system
-
-#### dion is an ultra-minimal and opinionated productivity system (and CLI tool).
-It tells you what to work on and when. You can also create, edit, and view tasks. It is an out-of-the-box usable, optionally programmatic kanban-ish free productivity CLI which you have absolute control over.
-
-Use `dion` to get more done in less time with less organization overhead.
-
-![dion](./assets/dionysus.jpg)
-###### `dion` is named after the Greek god of fertility and productivity, Dionysus.
-
-# Is `dion` for me?
-### Take this quiz.
+## Is `dex` for me?
+#### Take this quiz.
 
 1. Are you tired of trying many "productivity" tools, only to find you spend more time organizing your tasks than you do completing them?
 2. Are you worried if you move from Productivity Service #1 to Productivity Service #2 you will lose/have to re-enter all your project and task info?
-3. Do you like managing things with simple files (such as markdown) rather than online or app interfaces?
-4. Do you find yourself spending too much time figuring out what to work on?
+3. Do you like managing things with simple files (such as markdown) rather than online or through an app?
+4. Do you find yourself spending too much time figuring out what to work on or stressing about everything you have to do?
 5. Do you like the command line?
-6. Would you like absolute programmatic control over your productivity tool?
 
-If you answered "yes" to 4-6 or more of these questions, `dion` is for you. Otherwise, move on.
+**If you answered "yes" to three or more of these questions, `dex` is for you. Otherwise, move on.**
 
 
 # Highlights
