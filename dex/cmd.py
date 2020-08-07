@@ -288,6 +288,11 @@ def cli(ctx):
 @click.option("--ignore", "-i", multiple=True, help="Directories to ignore (e.g., ./assets)")
 def init(path, ignore):
     if not ignore:
+        print(ts.f(ERROR_COLOR,
+                   "No ignored directories specified! If any dirs will not be used to hold markdown projects and "
+                   "files, please pass them to init one at a time, e.g., 'dex init /path/to/some/folder -i "
+                   ".git -i my_special_folder'."))
+        print("Creating new executor...")
         ignore = tuple()
     descriptor = "existing" if os.path.exists(path) else "new"
     s = Executor(path=path, ignored_dirs=ignore)
@@ -464,7 +469,7 @@ def executor(ctx):
             valid_pids = project_ids
 
         is_today = day == datetime.datetime.today().strftime("%A")
-        color = "c" if is_today else "w"
+        color = "g" if is_today else "w"
         tree.create_node(ts.f(color, day), day, data=i, parent="root")
         i += 1
 
@@ -473,7 +478,7 @@ def executor(ctx):
         else:
             for j, pid in enumerate(valid_pids):
                 project_txt = f"{pmap[pid].name}"
-                color = "c" if is_today else "x"
+                color = "g" if is_today else "x"
                 tree.create_node(ts.f(color, project_txt), data=j, parent=day)
     tree.show(key=lambda node: node.data)
 
