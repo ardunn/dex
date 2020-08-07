@@ -48,7 +48,7 @@ class Executor:
         projects = []
         for i, folder in enumerate(folders):
             pid = valid_project_ids[i]
-            p = Project.from_files(folder, pid)
+            p = Project.from_files(folder, pid, coerce_pid_mismatches=True)
             projects.append(p)
         self.projects = projects
 

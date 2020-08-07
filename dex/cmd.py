@@ -574,8 +574,13 @@ def project_rename(ctx):
 def project_rm(ctx):
     p = ctx.obj["PROJECT"]
     name = copy.deepcopy(p.name)
-    shutil.rmtree(p.path)
-    print(f"Project '{name}' removed!")
+
+    rm_confirmation = ask_for_yn(f"Really remove project {p}?")
+    if rm_confirmation:
+        shutil.rmtree(p.path)
+        print(f"Project '{name}' removed!")
+    else:
+        print(f"Project {name} not removed.")
 
 
 # Task level commands ##################################################################################################
