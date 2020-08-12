@@ -4,8 +4,7 @@
 |:-------:|:-------:|
 |![Actions Status](https://github.com/ardunn/dex/workflows/tests/badge.svg)| Coming soon! |
 
-#### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool).
-###### Use it to get more done in less time with less organization overhead.
+#### `dex` is an ultra-minimal and opinionated productivity system (and CLI tool). Use it to get more done in less time with less organization overhead.
 `dex` is an out-of-the-box usable, optionally programmatic, kanban-ish FOSS productivity CLI which you have absolute control over. 
 Keep your tasks as local markdown files and `dex` will tell you how to optimally execute them. 
 
@@ -115,28 +114,28 @@ $: tree
 
 ![diagram.png](./assets/diagram.png)
 
-#### Tasks (units of work)
+### Tasks (units of work)
 
 Tasks are non-trivial, self-contained units of work. They are individual markdown files. The file name is the name of the task; the contents are whatever you want them to be (notes, subtasks, nothing, etc.).
 
-##### Tasks have the following attributes:
+Tasks have the following attributes:
 
 - **Status**: Todo, In progress (IP), On hold, Done, and Abandoned
 - **Effort**: How much effort (approximately) the task will take to complete (a number, 1-5)
-- **Importance**: How important the task is (a number, 1-5). Effort of 5 might be something that could get you promoted (or fired!), while effort of 1 has almost no consequences.
+- **Importance**: How important the task is (a number, 1-5). Importance of 5 might be something that could get you promoted (or fired!), while effort of 1 has almost no consequences.
 - **Due date**: Day when the task is due.
 
 
-#### Projects (collection of tasks)
+### Projects (collection of tasks)
 
 Projects are long-standing collections of tasks. Projects are folders. Besides containing the task markdown files, the project can contain whatever you want (e.g., dedicated notes folder, code subfolders, etc.). I just have a notes subfolder but it can be whatever you want.
 
 
-#### Executor (schedule of projects)
+### Executor (schedule of projects)
 
 The executor is your entire set of projects defined on a weekly basis; you can work on one or more projects per day. For example, you work on Projects A and B on MWF, and Project C on Tuesday/Thursday, with Projects D and E on weekends. Or you can work on every project every day; it's really up to you.
 
-#### Work
+### Work
 
 `dex`'s system for choosing tasks is built on a few core assumptions:
 
