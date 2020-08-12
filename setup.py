@@ -2,20 +2,20 @@ import os
 from setuptools import setup, find_packages
 
 
-version = "0.1.1.20200806"
+version = "0.1.2.20200810"
 module_dir = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(module_dir, "requirements.txt"), "r") as f:
     requirements = f.read().replace(" ", "").split("\n")
 
 long_description = \
     """
-    Day executor - dex - organizing your days so you don't have to.
+    dex (day executor) - an ultra-minimal command line productivity tool.
     """
 
 setup(
     name='dex',
     version=str(version),
-    description='A command line productivity tool.',
+    description='An ultra-minimal command line productivity tool.',
     url='https://github.com/ardunn/dex',
     author='Alex Dunn',
     author_email='denhaus@gmail.com',
@@ -31,7 +31,7 @@ setup(
     packages=find_packages(),
     # package_data={'rocketsled': ['defaults.yaml']},
     install_requires=requirements,
-    # data_files=['LICENSE', 'README.md', 'VERSION'],
+    data_files=['README.md', 'LICENSE'],
     include_package_data=True,
     entry_points='''
         [console_scripts]
