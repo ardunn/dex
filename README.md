@@ -73,8 +73,9 @@ There are currently 22 tasks for all projects, including done and abandoned.
 
 ---
 
-##### Your tasks are markdown files which can be edited or linked however you like, including via:
-- Tools like [Obsidian](https://obsidian.md) and [Atom](https://atom.io)
+##### Your tasks are local markdown files which can be edited or linked however you like, including via:
+- Markdown-based zettlekastens or "second brains" like [Obsidian](https://obsidian.md) or [Foam](https://github.com/foambubble/foam)
+- Editors like [Atom](https://atom.io) or [VSCode](https://code.visualstudio.com)
 - Basic text editors, such as `vim` or `nano`
 - `dex` CLI
 
