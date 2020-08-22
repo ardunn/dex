@@ -201,8 +201,11 @@ class Task:
         # For incomplete recurring tasks, keep the due date as it was previously (will go negative)
         # For recurring tasks being set to "done", move the due date to the current due date + recurrence time
         is_recurring, days_recurring = self.recurrence
+
         if new_status == done_str and is_recurring:
+            # The status for a recurring task will remain undone
             self.due = self.due + datetime.timedelta(days=days_recurring)
+            new_status = todo_str
 
         self.status = new_status
         self._write_state()

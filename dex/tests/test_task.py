@@ -204,9 +204,12 @@ class TestTask(unittest.TestCase):
 
         self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-30", due_date_fmt))
 
+        # completed recurring task should be set to todo, not done as it will never recur!
+        self.assertEqual(t_recurring.status, todo_str)
+
         t_recurring = Task.from_file(os.path.join(self.test_dir, f"{inactive_subdir}/recurring task.md"))
         self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-30", due_date_fmt))
-        self.assertEqual(t_recurring.status, done_str)
+        self.assertEqual(t_recurring.status, todo_str)
 
 
     # Tests dependent on more than 1 method
