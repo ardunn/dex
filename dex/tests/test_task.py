@@ -137,6 +137,7 @@ class TestTask(unittest.TestCase):
         t = Task.from_file(test_file)
         self.assertEqual(t.status, todo_str)
 
+
     def test_setters(self):
         test_file = os.path.join(self.test_dir, 'example task.md')
         t = Task.from_file(test_file)
@@ -207,9 +208,12 @@ class TestTask(unittest.TestCase):
         # completed recurring task should be set to todo, not done as it will never recur!
         self.assertEqual(t_recurring.status, todo_str)
 
-        t_recurring = Task.from_file(os.path.join(self.test_dir, f"{inactive_subdir}/recurring task.md"))
-        self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-07-30", due_date_fmt))
+        # Changing a recurring task from todo to done (i.e., updating the due)
+        t_recurring.set_status(done_str)
         self.assertEqual(t_recurring.status, todo_str)
+        print(t_recurring.due)
+        self.assertEqual(t_recurring.due, datetime.datetime.strptime("2020-08-04", due_date_fmt))
+        self.assertEqual(t_recurring.path, test_file_recurring)
 
 
     # Tests dependent on more than 1 method
