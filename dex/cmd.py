@@ -600,6 +600,7 @@ def project_rm(ctx):
 @click.option("--all-projects", "-a", is_flag=True, help="Show tasks across all the executor's projects, not just today's.")
 @click.option("--include-inactive", "-v", is_flag=True, help="Show done and abandoned tasks.")
 @click.option("--hide-task-details", "-h", is_flag=True, help="show task details")
+@click.option("--hide-held", is_flag=True, help="Hide held tasks.")
 ### Ordering options
 @click.option("--by-project", '-p', is_flag=True, help="Organize tasks by project. n_shown is shown for each project.")
 @click.option("--by-importance", '-i', is_flag=True, help="Organize tasks by importance.")
@@ -607,7 +608,7 @@ def project_rm(ctx):
 @click.option("--by-due", '-d', is_flag=True, help="Organize tasks by due date.")
 @click.option("--by-status", "-s", is_flag=True, help="Organize tasks by status.")
 @click.pass_context
-def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_due, by_status, by_project, by_importance, by_effort):
+def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, hide_held,  by_project, by_importance, by_effort, by_due, by_status):
     orderings = [by_due, by_status, by_project, by_importance, by_effort]
     if sum(orderings) > 1:
         print(ts.f("r", "Please only specify one ordering/organization option (--by-(project/importance/effort/due/status))"))
@@ -626,6 +627,9 @@ def tasks(ctx, n_shown, all_projects, include_inactive, hide_task_details, by_du
 
     pmap = e.project_map_today if only_today else e.project_map
     tasks_ordered = e.get_n_highest_priority_tasks(n_shown, only_today=only_today, include_inactive=include_inactive)
+
+    if hide_held:
+        tasks_ordered = [t for t in tasks_ordered if t.status != hold_str]
 
     tree = treelib.Tree()
     header_txt = f"{n_shown_str} tasks for {only_today_str}"
